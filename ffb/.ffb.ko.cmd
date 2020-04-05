@@ -1,1 +1,0 @@
-cmd_/home/dario/Documenti/t150_driver/ffb/ffb.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/dario/Documenti/t150_driver/ffb/ffb.ko /home/dario/Documenti/t150_driver/ffb/ffb.o /home/dario/Documenti/t150_driver/ffb/ffb.mod.o ;  true
