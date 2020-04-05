@@ -1,1 +1,0 @@
-cmd_/home/dario/Documenti/t150_driver/t150/t150.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/dario/Documenti/t150_driver/t150/t150.ko /home/dario/Documenti/t150_driver/t150/t150.o /home/dario/Documenti/t150_driver/t150/t150.mod.o ;  true
