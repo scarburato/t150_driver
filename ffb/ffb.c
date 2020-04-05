@@ -46,14 +46,14 @@ static int wheel_probe(struct usb_interface *interface, const struct usb_device_
 
 	printk(KERN_INFO "Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
 
-	request_full_func = usb_alloc_urb(0);
+	request_full_func = usb_alloc_urb(0, GFP_KERNEL);
 	if(!request_full_func)
 		return -EIO;
 
 	/** Send the request to the Wheel*/
 	usb_fill_control_urb(request_full_func, device, 0, (char*)&full_func, NULL, 0, wheel_callback, (void *)&wheel_config_done);
 
-	error_code = usb_submit_urb(request_full_func);
+	error_code = usb_submit_urb(request_full_func, GFP_KERNEL);
 	printk(KERN_INFO "Errore: %d", error_code);
 
 	if(error_code)
