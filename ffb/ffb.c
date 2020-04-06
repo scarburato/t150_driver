@@ -71,6 +71,7 @@ error:	usb_free_urb(request_full_func);
 
 static void wheel_disconnect(struct usb_interface *interface)
 {
+	usb_kill_urb(request_full_func);
 	usb_free_urb(request_full_func);
 	printk(KERN_INFO "Wheel removed. Bye\n");
 }
