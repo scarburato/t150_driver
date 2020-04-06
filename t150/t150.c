@@ -5,6 +5,7 @@
 #include <linux/usb/ch9.h>
 #include <linux/completion.h>
 #include <linux/input.h>
+#include <linux/usb/input.h>
 
 #include "t150.h"
 
@@ -37,6 +38,12 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 	usb_set_intfdata(interface, t150);
 
 	t150->usb_device = interface_to_usbdev(interface);
+
+	// Apro dev
+	usb_make_path(t150->usb_device, t150->dev_path, sizeof(t150->dev_path));
+	strlcat(t150->dev_path, "/input0", sizeof(t150->dev_path));
+
+	printk(KERN_INFO "Ò ottentuo %s\n", t150->dev_path);
 
 	// TODO CHECK FOR MEMORY FAIL
 	t150->joy_request_in = usb_alloc_urb(0, GFP_KERNEL);
@@ -92,27 +99,24 @@ error0:
 	return error_code;
 }
 
-static void t150_update_input(struct urb *urb)
-{
-	struct joy_state_packet *ss = urb->transfer_buffer;
-	printk("Gas pos: %d\n", (unsigned short)ss->gas_axis);
-
-	// Restart
-	usb_submit_urb(urb, GFP_ATOMIC);
-}
-
+const char *nameWH = "ThrustMaster T150 steering wheel";
 static inline int t150_init_input(struct t150 *t150)
 {
 	t150->joystick = input_allocate_device();
+	printk(KERN_INFO "Il signore Kernel mi ha dato %p, che gentile!\n", t150->joystick);
+
+	t150->joystick->name = nameWH;
+	t150->joystick->phys = t150->dev_path;
+	usb_to_input_id(t150->usb_device, &t150->joystick->id);
 
 	if(! (t150->joystick))
 		return -ENOMEM;
 
 	// Assi
-	input_set_abs_params(t150->joystick, ABS_GAS,    0x00,   0xff,   0, 0); // Gas
-	input_set_abs_params(t150->joystick, ABS_BRAKE,  0x00,   0xff,   0, 0); // Brake
-	input_set_abs_params(t150->joystick, ABS_Z,      0x00,   0xff,   0, 0); // Clutch ??
-	input_set_abs_params(t150->joystick, ABS_WHEEL,  0x0000, 0xffff, 0, 0); // Wheel
+	input_set_abs_params(t150->joystick, ABS_GAS,    0x000,  0x3ff,  0, 0); // Gas
+	input_set_abs_params(t150->joystick, ABS_BRAKE,  0x000,  0x3ff,  0, 0); // Brake
+	input_set_abs_params(t150->joystick, ABS_Z,      0x000,  0x3ff,  0, 0); // Clutch ??
+	input_set_abs_params(t150->joystick, ABS_WHEEL, -0x8000, 0x7fff, 0, 0); // Wheel
 
 	input_set_abs_params(t150->joystick, ABS_HAT0X, -1, +1, 0, 0); // d-pad
 	input_set_abs_params(t150->joystick, ABS_HAT0Y, -1, +1, 0, 0); // d-pad
@@ -141,10 +145,48 @@ static inline int t150_init_input(struct t150 *t150)
 	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY4); // BRAKE RELEASED
 	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY5); // CLUTCH PRESSED FULL
 	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY6); // BRAKE RELEASED
+
+	input_register_device(t150->joystick);
 }
 
+static inline uint16_t make_word(const uint8_t low, const uint8_t high)
+{
+	return ((uint16_t)low | ((uint8_t)(high) << 8));
+}
 
-// FIXME CRASHA
+static void t150_update_input(struct urb *urb)
+{
+	struct joy_state_packet *ss = urb->transfer_buffer;
+	struct t150 *t150 = (struct t150*)urb->context;
+
+	// Reporting axies
+	input_report_abs(t150->joystick, ABS_GAS,
+		make_word(ss->gas_axis_low, ss->gas_axis_high));
+
+	input_report_abs(t150->joystick, ABS_BRAKE,
+		make_word(ss->brake_axis_low, ss->brake_axis_high));
+
+	input_report_abs(t150->joystick, ABS_Z,
+		make_word(ss->clutch_axis_low, ss->clutch_axis_high));
+
+	input_report_abs(t150->joystick, ABS_WHEEL,
+		(int16_t)
+		(make_word(ss->wheel_axis_low, ss->wheel_axis_high) - 0x8000)
+	);
+
+	// Reporting d-pad
+	struct d_pad_pos d_pad_current_pos = CROSS_POSITIONS[
+		(ss->cross_state < 0x08) ? ss->cross_state : 0x08];
+
+	input_report_abs(t150->joystick, ABS_HAT0X, d_pad_current_pos.x);
+	input_report_abs(t150->joystick, ABS_HAT0Y, d_pad_current_pos.y);
+
+	input_sync(t150->joystick);
+
+	// Restart
+	usb_submit_urb(urb, GFP_ATOMIC);
+}
+
 static void t150_disconnect(struct usb_interface *interface)
 {
 	struct t150 *t150;

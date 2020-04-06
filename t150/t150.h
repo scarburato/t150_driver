@@ -12,6 +12,9 @@ struct t150
 	struct joy_state_packet *joy_data_in;
 	struct joy_state_packet *joy_data_in_dma;
 
+	// Device file
+	char dev_path[128];
+
 	struct input_dev *joystick;
 	uint8_t current_rotation;
 };
@@ -23,24 +26,21 @@ struct joy_state_packet
 	/* Range from 0x0000 (full left) to 0xffff (full right)
 	The range is relative to the current max rotation
 	**/
-	uint8_t		stering_wheel_axis_high;
-	uint8_t		stering_wheel_axis_low;
+	uint8_t		wheel_axis_low;
+	uint8_t		wheel_axis_high;
 
-	/** 0x00 when pedal released to 0xff when the pedal is fully pressed */
-	uint8_t		brake_axis;
-	/** 0b00 full pressed; 0b10 partialy pressed; 0b11 released */
-	uint8_t		brake_flags;
+	/** 0x000 when pedal released to 0x3ff when the pedal is fully pressed */
+	uint8_t		brake_axis_low;
+	uint8_t		brake_axis_high;
 
-	/** 0x00 when pedal released to 0xff when the pedal is fully pressed */
-	uint8_t		gas_axis;
-	/** 0b00 full pressed; 0b10 partialy pressed; 0b11 released */
-	uint8_t		gas_flags;
+	/** 0x000 when pedal released to 0x3ff when the pedal is fully pressed */
+	uint8_t		gas_axis_low;
+	uint8_t		gas_axis_high;
 
 	// FIXME This in absumtion!
 	/** 0x00 when pedal released to 0xff when the pedal is fully pressed */
-	uint8_t		clutch_axis;
-	/** 0b00 full pressed; 0b10 partialy pressed; 0b11 released */
-	uint8_t		clutch_flags;
+	uint8_t		clutch_axis_low;
+	uint8_t		clutch_axis_high;
 
 	uint8_t		__padding1; // UNKNOWN
 	uint8_t		__padding2; // UNKNOWN
@@ -48,7 +48,23 @@ struct joy_state_packet
 	uint8_t		__padding4; // UNKNOWN
 	uint8_t		__padding5; // UNKNOWN
 
-	uint8_t		cross;
+	uint8_t		cross_state;
+};
+
+const struct d_pad_pos
+{
+	int8_t x;
+	int8_t y;
+} CROSS_POSITIONS[] = {
+	{+1,  0}, // 0x00 north
+	{+1, +1}, // 0x01 north-est
+	{0 , +1}, // 0x02 test
+	{-1, +1}, // 0x03 south-est
+	{-1,  0}, // 0x04 south
+	{-1, -1}, // 0x05 south-west
+	{0 , -1}, // 0x06 west
+	{+1, -1}, // 0x07 nort-west
+	{0, 0}
 };
 
 
