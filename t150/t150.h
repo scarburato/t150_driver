@@ -44,7 +44,10 @@ struct joy_state_packet
 
 	uint8_t		__padding1; // UNKNOWN
 	uint8_t		__padding2; // UNKNOWN
-	uint8_t		__padding3; // UNKNOWN
+
+	/** Some buttons */
+	uint8_t		buttons_state;
+
 	uint8_t		__padding4; // UNKNOWN
 	uint8_t		__padding5; // UNKNOWN
 
@@ -66,6 +69,9 @@ const struct d_pad_pos
 	{+1, -1}, // 0x07 nort-west
 	{0, 0}
 };
+
+#define BTN_GEAR_UP_MASK	0b00000001
+#define BTN_GEAR_DOWN_MASK	0b00000010
 
 
 /** Function declearations **/

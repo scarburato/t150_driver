@@ -181,6 +181,13 @@ static void t150_update_input(struct urb *urb)
 	input_report_abs(t150->joystick, ABS_HAT0X, d_pad_current_pos.x);
 	input_report_abs(t150->joystick, ABS_HAT0Y, d_pad_current_pos.y);
 
+	// Report buttons
+	input_report_key(t150->joystick, BTN_GEAR_UP,
+		ss->buttons_state & BTN_GEAR_UP_MASK);
+
+	input_report_key(t150->joystick, BTN_GEAR_DOWN,
+		ss->buttons_state & BTN_GEAR_DOWN_MASK);
+
 	input_sync(t150->joystick);
 
 	// Restart
