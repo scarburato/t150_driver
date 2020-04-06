@@ -28,16 +28,12 @@ struct usb_ctrlrequest full_func =
 
 struct urb *request_full_func;
 
-uint8_t seq[] =
-{
-	0x80, 0x06, 0x00, 0x01, 0x00, 0x00, 0x12, 0x00
-};
-
 static void wheel_callback(struct urb *urb)
 {
 	printk(KERN_INFO "Ò fatto la richiesta, ottenuta risposta!\n");
 }
 
+// FIXME Driver works but crashes...
 static int wheel_probe(struct usb_interface *interface, const struct usb_device_id *id)
 {
 	int error_code = 0;
