@@ -18,7 +18,7 @@ static int t150_set_rotation(uint8_t angle)
 
 static void t150_callback(struct urb *urb)
 {
-	printk(KERN_INFO "Ò fatto la richiesta, ottenuta risposta!\n");
+	printk(KERN_INFO "t150: Ò fatto la richiesta, ottenuta risposta!\n");
 }
 
 static int t150_probe(struct usb_interface *interface, const struct usb_device_id *id)
@@ -27,7 +27,7 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 	struct t150 *t150;
 	struct usb_endpoint_descriptor *ep_irq_in = 0, *ep_irq_out = 0;
 
-	printk(KERN_INFO "T150 Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
+	printk(KERN_INFO "t150: T150 Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
 
 	// Create new t150 struct
 	t150 = kzalloc(sizeof(struct t150), GFP_KERNEL);
@@ -43,7 +43,7 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 	usb_make_path(t150->usb_device, t150->dev_path, sizeof(t150->dev_path));
 	strlcat(t150->dev_path, "/input0", sizeof(t150->dev_path));
 
-	printk(KERN_INFO "Ò ottentuo %s\n", t150->dev_path);
+	printk(KERN_INFO "t150: Ò ottentuo %s\n", t150->dev_path);
 
 	// TODO CHECK FOR MEMORY FAIL
 	t150->joy_request_in = usb_alloc_urb(0, GFP_KERNEL);
@@ -103,14 +103,14 @@ const char *nameWH = "ThrustMaster T150 steering wheel";
 static inline int t150_init_input(struct t150 *t150)
 {
 	t150->joystick = input_allocate_device();
-	printk(KERN_INFO "Il signore Kernel mi ha dato %p, che gentile!\n", t150->joystick);
+	printk(KERN_INFO "t150: Il signor Kernel mi ha dato %p, che gentile!\n", t150->joystick);
+
+	if(! (t150->joystick))
+		return -ENOMEM;
 
 	t150->joystick->name = nameWH;
 	t150->joystick->phys = t150->dev_path;
 	usb_to_input_id(t150->usb_device, &t150->joystick->id);
-
-	if(! (t150->joystick))
-		return -ENOMEM;
 
 	// Assi
 	input_set_abs_params(t150->joystick, ABS_GAS,    0x000,  0x3ff,  0, 0); // Gas
@@ -138,15 +138,9 @@ static inline int t150_init_input(struct t150 *t150)
 	input_set_capability(t150->joystick, EV_KEY, BTN_SELECT); // SE / share
 	input_set_capability(t150->joystick, EV_KEY, BTN_GAMEPAD); // PS
 
-	// Other
-	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY1); // GAS PRESSED FULL
-	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY2); // GAS RELEASED
-	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY3); // BRAKE PRESSED FULL
-	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY4); // BRAKE RELEASED
-	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY5); // CLUTCH PRESSED FULL
-	input_set_capability(t150->joystick, EV_KEY, BTN_TRIGGER_HAPPY6); // BRAKE RELEASED
-
 	input_register_device(t150->joystick);
+
+	return 0;
 }
 
 static inline uint16_t make_word(const uint8_t low, const uint8_t high)
@@ -198,7 +192,7 @@ static void t150_disconnect(struct usb_interface *interface)
 {
 	struct t150 *t150;
 
-	printk(KERN_INFO "T150 Wheel removed. Bye\n");
+	printk(KERN_INFO "t150: T150 Wheel removed. Bye\n");
 
 	t150 = usb_get_intfdata(interface);
 
