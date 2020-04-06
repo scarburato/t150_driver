@@ -3,7 +3,7 @@ KDIR := /lib/modules/$(shell uname -r)/build
 
 all:
 	$(MAKE) -C $(KDIR) M=$(shell pwd) modules
-	cp ffb.ko ../build
+	cp t150.ko ../build
 	$(MAKE) -C $(KDIR) M=$(shell pwd) clean
 
 clean:
