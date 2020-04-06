@@ -7,18 +7,29 @@ struct t150
 {
 	// USB stuff
 	struct usb_device *usb_device;
-	struct urb *joy_request_out;
-	struct urb *joy_request_in;
+
+	// Stuff to read from the wheel
 	struct joy_state_packet *joy_data_in;
+	struct urb *joy_request_in;
+	int pipe_in;
+
+	// Stuff to write to the wheel
 	struct joy_state_packet *joy_data_in_dma;
+	struct urb *joy_request_out;
+	int pipe_out;
 
-	// Device file
+	// Input api stuff
 	char dev_path[128];
-
 	struct input_dev *joystick;
+
 	uint8_t current_rotation;
+	bool test;
 };
 
+//structs about packets entering the host
+/**
+ *
+ */
 struct joy_state_packet
 {
 	uint8_t		__padding0; // UNKNOWN
@@ -70,10 +81,25 @@ const struct d_pad_pos
 	{0, 0}
 };
 
+// structs about packets entering the wheel
+struct set_return_force
+{
+	/** Must be 0x40 to set the wheel pos*/
+	const uint8_t code0;
+	/** Must be 0x03*/
+	const uint8_t code1;
+
+	/** The force between 0x00 and 0x64 */
+	uint8_t return_force;
+
+	uint8_t zero;
+};
+
 #define BTN_GEAR_UP_MASK	0b00000001
 #define BTN_GEAR_DOWN_MASK	0b00000010
 
 
-/** Function declearations **/
-static int t150_init_input(struct t150 *t150);
+/** Function declearatioinit_inpuns **/
+static inline int t150_init_input(struct t150 *t150);
 static void t150_update_input(struct urb *urb);
+static int t150_set_return_force(struct t150 *t150, uint8_t force);

@@ -11,11 +11,6 @@
 
 struct urb *js_read;
 
-static int t150_set_rotation(uint8_t angle)
-{
-	return 0;
-}
-
 static void t150_callback(struct urb *urb)
 {
 	printk(KERN_INFO "t150: Ò fatto la richiesta, ottenuta risposta!\n");
@@ -33,6 +28,8 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 	t150 = kzalloc(sizeof(struct t150), GFP_KERNEL);
 	if(!t150)
 		return -ENOMEM;
+
+	t150->test = true;
 
 	// Save
 	usb_set_intfdata(interface, t150);
@@ -76,11 +73,15 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
                       int buffer_length, usb_complete_t complete,
                       void *context, int interval);*/
 
+	t150->pipe_in = usb_rcvintpipe(t150->usb_device, ep_irq_in->bEndpointAddress);
+	t150->pipe_out= usb_sndintpipe(t150->usb_device, ep_irq_out->bEndpointAddress);
+
 	t150_init_input(t150);
+
 	usb_fill_int_urb(
 		t150->joy_request_in,
 		t150->usb_device,
-		usb_rcvintpipe(t150->usb_device, ep_irq_in->bEndpointAddress),
+		t150->pipe_in,
 		t150->joy_data_in,
 		sizeof(struct joy_state_packet),
 		t150_update_input,
@@ -186,6 +187,12 @@ static void t150_update_input(struct urb *urb)
 
 	// Restart
 	usb_submit_urb(urb, GFP_ATOMIC);
+
+	if(t150->test)
+	{
+		t150->test = false;
+		t150_set_return_force(t150, 0x0c);
+	}
 }
 
 static void t150_disconnect(struct usb_interface *interface)
@@ -196,9 +203,6 @@ static void t150_disconnect(struct usb_interface *interface)
 
 	t150 = usb_get_intfdata(interface);
 
-	// input deregister
-	input_unregister_device(t150->joystick);
-
 	// Stop al pending requests
 	usb_kill_urb(t150->joy_request_in);
 	usb_kill_urb(t150->joy_request_out);
@@ -207,12 +211,70 @@ static void t150_disconnect(struct usb_interface *interface)
 	usb_free_urb(t150->joy_request_in);
 	usb_free_urb(t150->joy_request_out);
 
+	// input deregister
+	input_unregister_device(t150->joystick);
+
 	// Free buffers
 	kfree(t150->joy_data_in);
 
 	// t150 free
 	kfree(t150);
 }
+
+static void my(struct urb *urb)
+{
+	printk(KERN_INFO "t150: eccomi!\n");
+}
+
+/**
+ * Set the return force of the wheel from 0x0000 (0%) to 0xFFFF (100%, full force)
+ */
+static int t150_set_return_force(struct t150 *t150, uint8_t force)
+{
+	int actual_len = 0, status = 0;
+
+	struct set_return_force srf = {
+		0x40,
+		0x03,
+		force > 0x64 ? 0x64 : force,
+		0
+	};
+
+	usb_fill_int_urb(
+		t150->joy_request_out,
+		t150->usb_device,
+		t150->pipe_out,
+		&srf,
+		sizeof(struct set_return_force),
+		my,
+		t150,
+		//interface->cur_altsetting->endpoint->desc.bInterval
+		// This is a rondom number I choose, I do not understand
+		// whats this field does :P
+		0x0f
+	);
+
+	usb_submit_urb(t150->joy_request_out, GFP_ATOMIC);
+
+	if(status != 0)
+		printk(
+			KERN_INFO "t150: Ho provato ad impostare la forza a %d, ma ò ottenuto errore %d!",
+			force, status);
+
+	return status;
+}
+
+static int t150_set_rotation(uint8_t angle)
+{
+	return 0;
+}
+
+
+
+/********************************************************************
+ *
+ *
+ *******************************************************************/
 
 static struct usb_device_id t150_table[] =
 {
