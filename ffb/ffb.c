@@ -84,7 +84,7 @@ MODULE_DEVICE_TABLE (usb, wheel_table);
 
 static struct usb_driver wheel_driver =
 {
-	.name = "Thrustmaster FFB Wheel driver",
+	.name = "ffb",
 	.id_table = wheel_table,
 	.probe = wheel_probe,
 	.disconnect = wheel_disconnect,
