@@ -33,7 +33,6 @@ static void wheel_callback(struct urb *urb)
 	printk(KERN_INFO "Ò fatto la richiesta, ottenuta risposta!\n");
 }
 
-// FIXME Driver works but crashes...
 char fake_buffer[16] = {0};
 static int wheel_probe(struct usb_interface *interface, const struct usb_device_id *id)
 {
@@ -51,7 +50,7 @@ static int wheel_probe(struct usb_interface *interface, const struct usb_device_
 	usb_fill_control_urb(
 		request_full_func,
 		device,
-		0,
+		usb_sndctrlpipe(device, 0),
 		(char*)&full_func,
 		fake_buffer, 16,
 		wheel_callback,
