@@ -6,41 +6,32 @@
 #include <linux/completion.h>
 #include <linux/input.h>
 #include <linux/usb/input.h>
+#include <linux/sysfs.h>
+#include <linux/device.h>
+#include <linux/delay.h>
 
 #include "t150.h"
-
-struct urb *js_read;
+#include "magic.h"
 
 static void t150_callback(struct urb *urb)
 {
 	printk(KERN_INFO "t150: Ò fatto la richiesta, ottenuta risposta!\n");
 }
 
-static int t150_probe(struct usb_interface *interface, const struct usb_device_id *id)
+/** Init for a t150 data struct
+ * @param t150 pointer to the t150 structor to init
+ * @param interface pointer to usb interface which the wheel is connected to
+ */
+static inline int t150_constructor(struct t150 *t150,struct usb_interface *interface)
 {
-	int error_code = 0, i;
-	struct t150 *t150;
-	struct usb_endpoint_descriptor *ep_irq_in = 0, *ep_irq_out = 0;
-
-	printk(KERN_INFO "t150: T150 Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
-
-	// Create new t150 struct
-	t150 = kzalloc(sizeof(struct t150), GFP_KERNEL);
-	if(!t150)
-		return -ENOMEM;
-
-	t150->test = true;
-
-	// Save
-	usb_set_intfdata(interface, t150);
+	int i, error_code = 0;
+	struct usb_endpoint_descriptor *ep, *ep_irq_in = 0, *ep_irq_out = 0;
 
 	t150->usb_device = interface_to_usbdev(interface);
 
-	// Apro dev
+	// Path used for the input subsystem
 	usb_make_path(t150->usb_device, t150->dev_path, sizeof(t150->dev_path));
 	strlcat(t150->dev_path, "/input0", sizeof(t150->dev_path));
-
-	printk(KERN_INFO "t150: Ò ottentuo %s\n", t150->dev_path);
 
 	// TODO CHECK FOR MEMORY FAIL
 	t150->joy_request_in = usb_alloc_urb(0, GFP_KERNEL);
@@ -48,18 +39,19 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 
 	t150->joy_data_in = kzalloc(sizeof(struct joy_state_packet), GFP_KERNEL);
 
+	t150->lock = kzalloc(sizeof(struct mutex), GFP_KERNEL);
+	//mutex_init(t150->lock);
 
 	// From xpad.c
-	for (i = 0; i < 2; i++) {
-		struct usb_endpoint_descriptor *ep =
-				&interface->cur_altsetting->endpoint[i].desc;
+	for (i = 0; i < 2; i++) 
+	{
+		ep = &interface->cur_altsetting->endpoint[i].desc;
 
-		if (usb_endpoint_xfer_int(ep)) {
+		if (usb_endpoint_xfer_int(ep))
 			if (usb_endpoint_dir_in(ep))
 				ep_irq_in = ep;
 			else
 				ep_irq_out = ep;
-		}
 	}
 
 	if (!ep_irq_in || !ep_irq_out) {
@@ -68,31 +60,52 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 		goto error0;
 	}
 
-	/*void usb_fill_int_urb(struct urb *urb, struct usb_device *dev,
-                      unsigned int pipe, void *transfer_buffer,
-                      int buffer_length, usb_complete_t complete,
-                      void *context, int interval);*/
-
 	t150->pipe_in = usb_rcvintpipe(t150->usb_device, ep_irq_in->bEndpointAddress);
 	t150->pipe_out= usb_sndintpipe(t150->usb_device, ep_irq_out->bEndpointAddress);
 
 	t150_init_input(t150);
+	t150_init_sysf(t150, interface);
 
-	usb_fill_int_urb(
-		t150->joy_request_in,
-		t150->usb_device,
-		t150->pipe_in,
-		t150->joy_data_in,
-		sizeof(struct joy_state_packet),
-		t150_update_input,
-		t150,
-		//interface->cur_altsetting->endpoint->desc.bInterval
-		// This is a rondom number I choose, I do not understand
-		// whats this field does :P
-		0x0f
-	);
+// @TODO Handle errors
+error0:
+	return error_code;
 
-	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
+}
+
+static int t150_probe(struct usb_interface *interface, const struct usb_device_id *id)
+{
+	int error_code = 0, i;
+	struct t150 *t150;
+	struct urb *tmp = 0;
+
+	printk(KERN_INFO "t150: T150 Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
+
+	// Create new t150 struct
+	t150 = kzalloc(sizeof(struct t150), GFP_KERNEL);
+	if(!t150)
+		return -ENOMEM;
+
+	t150_constructor(t150, interface);
+
+	// Save
+	usb_set_intfdata(interface, t150);
+
+	// I'll try to mimic the Windows driver
+	for(i = 0; i < magic_packet_length; i++)
+	{
+		tmp = usb_alloc_urb(0, GFP_KERNEL);
+		usb_fill_control_urb(
+			tmp,
+			t150->usb_device,
+			usb_sndctrlpipe(t150->usb_device, 0),
+			magic_packet[i],
+			magic_buffer[i],
+			make_word(magic_packet[i][6], magic_packet[i][7]),
+			t150_setup_end,
+			tmp
+		);
+		usb_submit_urb(tmp, GFP_ATOMIC);
+	}
 
 	return 0;
 error0:
@@ -100,7 +113,16 @@ error0:
 	return error_code;
 }
 
+static void t150_setup_end(struct urb *urb)
+{
+	usb_free_urb(urb);
+}
+
 const char *nameWH = "ThrustMaster T150 steering wheel";
+/**
+ * This function initializes the input system for
+ * @t150 pointer to our device
+ */
 static inline int t150_init_input(struct t150 *t150)
 {
 	t150->joystick = input_allocate_device();
@@ -108,6 +130,8 @@ static inline int t150_init_input(struct t150 *t150)
 
 	if(! (t150->joystick))
 		return -ENOMEM;
+
+	input_set_drvdata(t150->joystick, t150);
 
 	t150->joystick->name = nameWH;
 	t150->joystick->phys = t150->dev_path;
@@ -139,20 +163,56 @@ static inline int t150_init_input(struct t150 *t150)
 	input_set_capability(t150->joystick, EV_KEY, BTN_SELECT); // SE / share
 	input_set_capability(t150->joystick, EV_KEY, BTN_GAMEPAD); // PS
 
+	t150->joystick->open = t150_open;
+	t150->joystick->close = t150_close;
+
+	usb_fill_int_urb(
+		t150->joy_request_in,
+		t150->usb_device,
+		t150->pipe_in,
+		t150->joy_data_in,
+		sizeof(struct joy_state_packet),
+		t150_update_input,
+		t150,
+		//interface->cur_altsetting->endpoint->desc.bInterval
+		// This is a rondom number I choose, I do not understand
+		// whats this field does :P
+		0x08 //4 * HZ //0x0f
+	);
+
+	// Start!
 	input_register_device(t150->joystick);
 
 	return 0;
 }
 
-static inline uint16_t make_word(const uint8_t low, const uint8_t high)
+/** Function */
+static int t150_open(struct input_dev *dev)
 {
-	return ((uint16_t)low | ((uint8_t)(high) << 8));
+	struct t150 *t150 = input_get_drvdata(dev);
+	printk("t150: inizio!");
+	//mutex_lock(t150->lock);
+	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
+	return 0;
 }
 
+static void t150_close(struct input_dev *dev)
+{
+	struct t150 *t150 = input_get_drvdata(dev);
+	usb_kill_urb(t150->joy_request_in);
+}
+
+/**
+ * This function updates the current input status of the joystick
+ * @t150 target wheel
+ * @ss   new status to register
+ */
 static void t150_update_input(struct urb *urb)
 {
 	struct joy_state_packet *ss = urb->transfer_buffer;
 	struct t150 *t150 = (struct t150*)urb->context;
+
+	//mutex_unlock(t150->lock);
 
 	// Reporting axies
 	input_report_abs(t150->joystick, ABS_GAS,
@@ -185,14 +245,8 @@ static void t150_update_input(struct urb *urb)
 
 	input_sync(t150->joystick);
 
-	// Restart
-	usb_submit_urb(urb, GFP_ATOMIC);
-
-	if(t150->test)
-	{
-		t150->test = false;
-		t150_set_return_force(t150, 0x0c);
-	}
+	//mutex_lock(t150->lock);
+	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
 }
 
 static void t150_disconnect(struct usb_interface *interface)
@@ -214,8 +268,12 @@ static void t150_disconnect(struct usb_interface *interface)
 	// input deregister
 	input_unregister_device(t150->joystick);
 
+	// sysf free
+	t150_free_sysf(t150, interface);
+
 	// Free buffers
 	kfree(t150->joy_data_in);
+	kfree(t150->lock);
 
 	// t150 free
 	kfree(t150);
@@ -226,53 +284,286 @@ static void my(struct urb *urb)
 	printk(KERN_INFO "t150: eccomi!\n");
 }
 
-/**
- * Set the return force of the wheel from 0x0000 (0%) to 0xFFFF (100%, full force)
- */
-static int t150_set_return_force(struct t150 *t150, uint8_t force)
-{
-	int actual_len = 0, status = 0;
-
-	struct set_return_force srf = {
-		0x40,
-		0x03,
-		force > 0x64 ? 0x64 : force,
-		0
-	};
-
-	usb_fill_int_urb(
-		t150->joy_request_out,
-		t150->usb_device,
-		t150->pipe_out,
-		&srf,
-		sizeof(struct set_return_force),
-		my,
-		t150,
-		//interface->cur_altsetting->endpoint->desc.bInterval
-		// This is a rondom number I choose, I do not understand
-		// whats this field does :P
-		0x0f
-	);
-
-	usb_submit_urb(t150->joy_request_out, GFP_ATOMIC);
-
-	if(status != 0)
-		printk(
-			KERN_INFO "t150: Ho provato ad impostare la forza a %d, ma ò ottenuto errore %d!",
-			force, status);
-
-	return status;
-}
-
 static int t150_set_rotation(uint8_t angle)
 {
 	return 0;
 }
 
+/********************************************************************
+ *			             SYSF STUFF
+ *
+ *        This section contains the handlers for the
+ *          attributes created in the sysfs when a
+ *             wheel is plugged into the host
+ *******************************************************************/
+
+/**
+*/
+static uint8_t ss[15];
+static inline int t150_start_edit_settings(struct t150 *t150)
+{
+	int boh, i;
+
+	usb_control_msg(
+		t150->usb_device,
+		usb_sndctrlpipe(t150->usb_device, 0),
+		driver_settings_start[1],
+		driver_settings_start[0],
+		make_word(driver_settings_start[2], driver_settings_start[3]),
+		make_word(driver_settings_start[4], driver_settings_start[5]),
+		magic_buffer[0], // TODO no
+		make_word(driver_settings_start[6], driver_settings_start[7]),
+		50
+	);
+
+	for(i = 0; i < init_win_len; i++)
+	{
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->pipe_out,
+			init_win[i],
+			15, &boh,
+			50
+		);
+		msleep(20);
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->pipe_in,
+			&ss,
+			15, &boh,
+			50
+		);
+		printk(
+			KERN_INFO "t150: START packet: %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x\n",
+			ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], ss[6], ss[7],
+			ss[8], ss[9], ss[10],ss[11],ss[12],ss[13],ss[14]
+		);
+	}
+
+	// We want to modify the Wheel settings
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		&start_input_settings,
+		sizeof(start_input_settings), &boh,
+		20
+	);
+	return 0;
+}
+
+static inline int t150_stop_edit_settings(struct t150 *t150)
+{
+	int boh, i;
+
+	// Submit & close
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		&magic,
+		2, &boh,
+		1000
+	);
+	msleep(5);
+
+	for(i = 0; i < magic_apply_len; i++)
+	{
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->pipe_out,
+			magic_apply[i],
+			15, &boh,
+			500
+		);
+		msleep(15);
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->pipe_in,
+			&ss,
+			15, &boh,
+			500
+		);
+		printk(
+			KERN_INFO "t150: STOP packet: %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX %02hhX\n",
+			ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], ss[6], ss[7],
+			ss[8], ss[9], ss[10],ss[11],ss[12],ss[13],ss[14]
+		);
+	}
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		&apply_input_settings,
+		2, &boh,
+		1000
+	);
+	msleep(25);
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		&stop_input_settings,
+		2, &boh,
+		1000
+	);
+	msleep(25);
+
+	return 0;
+}
+
+static ssize_t t150_read_return_force(struct device *dev, struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	uint8_t nforce;
+	int boh;
+	struct usb_interface *uif = to_usb_interface(dev);
+	struct t150 *t150 = usb_get_intfdata(uif);
+	// TODO scrivi
+	// FIXME alloca dinamicamente
+
+	// If mallformed input leave...
+	if(kstrtou8(buf, 10, &nforce))
+		return count;
+
+	if(nforce > 100)
+		nforce = 100;
+
+	struct set_return_force srf = {
+		0x40,
+		0x03,
+		nforce,
+		0
+	};
+
+	t150_start_edit_settings(t150);
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		return_wheel_mode,
+		sizeof(return_wheel_mode), &boh,
+		1000
+	);
+
+	// Send to the wheel desidered return force
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		&srf,
+		sizeof(struct set_return_force), &boh,
+		1000
+	);
+
+	t150_stop_edit_settings(t150);
+
+	return count;
+}
+
+static ssize_t t150_write_return_force(struct device *dev, struct device_attribute *attr,char * buf )
+{
+	// TODO Read from wheel with USB request
+	return sscanf(buf, no_str);
+}
+
+static ssize_t t150_read_simulate_return_force(struct device *dev, struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	uint8_t use;
+	int boh;
+	struct usb_interface *uif = to_usb_interface(dev);
+	struct t150 *t150 = usb_get_intfdata(uif);
+	//uint8_t *new_setting = kzalloc(sizeof(return_wheel_mode), GFP_KERNEL);
+
+	//memcpy(new_setting, return_wheel_mode, sizeof(return_wheel_mode));
+
+	if(kstrtou8(buf, 10, &use))
+		return count;
+
+	return_wheel_mode[2] = use;
+
+	t150_start_edit_settings(t150);
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		return_wheel_mode,
+		sizeof(return_wheel_mode), &boh,
+		1000
+	);
+	t150_stop_edit_settings(t150);
+
+	//kzfree(new_setting);
+
+	return count;
+}
+
+static ssize_t t150_read_range(struct device *dev, struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	uint16_t range;
+	int boh;
+	struct usb_interface *uif = to_usb_interface(dev);
+	struct t150 *t150 = usb_get_intfdata(uif);
+
+	char packet[] = {0x40, 0x11, 0x00, 0x00};
+
+	// If mallformed input leave...
+	if(kstrtou16(buf, 10, &range))
+		return count;
+
+	*((uint16_t *)&packet[2]) = cpu_to_le16(range);
+
+	t150_start_edit_settings(t150);
+
+	// Send to the wheel desidered return force
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		&packet[0],
+		4, &boh,
+		1000
+	);
+
+	t150_stop_edit_settings(t150);
+	return count;
+}
+
+static ssize_t t150_write_range(struct device *dev, struct device_attribute *attr,char * buf )
+{
+	// TODO Read from wheel with USB request
+	return sscanf(buf, no_str);
+}
+
+/** Attribute used to set how much strong is the simulated "spring" that makes
+ * the wheel center back when steered.
+ * Input is a decimal value between 0 and 100*/
+static DEVICE_ATTR(return_force, 0660, t150_write_return_force, t150_read_return_force);
+
+/** Attribute used to set if the wheel has to activate the auto-centering of the
+ *  wheel.
+ * Input is a numerical value. 0 disabled, not 0 enabled*/
+static DEVICE_ATTR(simulate_return_force, 0660, t150_write_return_force, t150_read_simulate_return_force);
+
+/** Attribute used to set the wheel max rotation in degrees.
+ * Input is a decimal value between between 270 and 1080*/
+static DEVICE_ATTR(range, 0660, t150_write_range, t150_read_range);
+
+static inline int t150_init_sysf(struct t150 *t150, struct usb_interface *uif)
+{
+	device_create_file(&uif->dev, &dev_attr_return_force);
+	device_create_file(&uif->dev, &dev_attr_simulate_return_force);
+	device_create_file(&uif->dev, &dev_attr_range);
+
+}
+
+static inline int t150_free_sysf(struct t150 *t150, struct usb_interface *uif)
+{
+	device_remove_file(&uif->dev, &dev_attr_return_force);
+	device_remove_file(&uif->dev, &dev_attr_simulate_return_force);
+	device_remove_file(&uif->dev, &dev_attr_range);
+}
 
 
 /********************************************************************
- *
+ *			MODULE STUFF
  *
  *******************************************************************/
 
@@ -285,7 +576,7 @@ MODULE_DEVICE_TABLE (usb, t150_table);
 
 static struct usb_driver t150_driver =
 {
-	.name = "Thrustmaster T150 Wheel driver",
+	.name = "t150",
 	.id_table = t150_table,
 	.probe = t150_probe,
 	.disconnect = t150_disconnect,
