@@ -1,5 +1,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/usb.h>
 #include <linux/usb/ch9.h>
@@ -12,10 +13,12 @@
 
 #include "t150.h"
 #include "magic.h"
+#include "buttons.h"
 
 static void t150_callback(struct urb *urb)
 {
 	printk(KERN_INFO "t150: Ò fatto la richiesta, ottenuta risposta!\n");
+	
 }
 
 /** Init for a t150 data struct
@@ -42,8 +45,14 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 	t150->lock = kzalloc(sizeof(struct mutex), GFP_KERNEL);
 	//mutex_init(t150->lock);
 
+	t150->setup_task = kthread_create(
+		t150_inital_usb_setup,
+		t150,
+		"setup_task"
+	);
+
 	// From xpad.c
-	for (i = 0; i < 2; i++) 
+	for (i = 0; i < 2; i++)
 	{
 		ep = &interface->cur_altsetting->endpoint[i].desc;
 
@@ -62,6 +71,9 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 
 	t150->pipe_in = usb_rcvintpipe(t150->usb_device, ep_irq_in->bEndpointAddress);
 	t150->pipe_out= usb_sndintpipe(t150->usb_device, ep_irq_out->bEndpointAddress);
+
+	t150->bInterval_in = ep_irq_in->bInterval;
+	t150->bInterval_out = ep_irq_out->bInterval;
 
 	t150_init_input(t150);
 	t150_init_sysf(t150, interface);
@@ -90,27 +102,120 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 	// Save
 	usb_set_intfdata(interface, t150);
 
-	// I'll try to mimic the Windows driver
-	for(i = 0; i < magic_packet_length; i++)
-	{
-		tmp = usb_alloc_urb(0, GFP_KERNEL);
-		usb_fill_control_urb(
-			tmp,
-			t150->usb_device,
-			usb_sndctrlpipe(t150->usb_device, 0),
-			magic_packet[i],
-			magic_buffer[i],
-			make_word(magic_packet[i][6], magic_packet[i][7]),
-			t150_setup_end,
-			tmp
-		);
-		usb_submit_urb(tmp, GFP_ATOMIC);
-	}
+	// Start usb setup
+	wake_up_process(t150->setup_task);
 
 	return 0;
 error0:
 	kfree(t150);
 	return error_code;
+}
+
+/**
+ * This function blindly mimic the Windows driver
+ */
+static int t150_inital_usb_setup(void *data)
+{
+	struct t150 *t150 = data;
+	int boh, i = 0;
+	uint8_t buffer[15] = {0};
+
+	printk("t150: setup started!");
+
+	for(i = 16; i < magic_packet_length - 2; i++)
+	{
+		usb_control_msg(
+			t150->usb_device,
+			usb_sndctrlpipe(t150->usb_device, 0),
+			magic_packet[i][1],
+			magic_packet[i][0],
+			make_word(magic_packet[i][2], magic_packet[i][3]),
+			make_word(magic_packet[i][4], magic_packet[i][5]),
+			magic_buffer[i],
+			make_word(magic_packet[i][6], magic_packet[i][7]),
+			1000
+		);
+	}
+
+	for(i = 0; i < init_win_len - 1; i++)
+	{
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->joy_request_out,
+			init_win[i], 15,
+			&boh, 1000
+		);
+		msleep(15);
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->joy_request_in,
+			buffer, 15,
+			&boh, 1000
+		);
+		printP(buffer);
+	}
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->joy_request_in,
+		buffer, 15,
+		&boh, 1000
+	);
+
+	usb_control_msg(
+		t150->usb_device,
+		usb_sndctrlpipe(t150->usb_device, 0),
+		magic_packet[22][1],
+		magic_packet[22][0],
+		make_word(magic_packet[22][2], magic_packet[22][3]),
+		make_word(magic_packet[22][4], magic_packet[22][5]),
+		magic_buffer[22],
+		make_word(magic_packet[22][6], magic_packet[22][7]),
+		1000
+	);
+
+	for(i = 0; i < 2; i++)
+	{
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->joy_request_in,
+			buffer, 15,
+			&boh, 1000
+		);
+		printP(buffer);
+	}
+	
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->joy_request_out,
+		range900, 4,
+		&boh, 1000
+	);
+
+	msleep(250);
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->joy_request_in,
+		buffer, 15,
+		&boh, 1000
+	);
+
+	printP(buffer);
+
+	usb_control_msg(
+		t150->usb_device,
+		usb_sndctrlpipe(t150->usb_device, 0),
+		magic_packet[23][1],
+		magic_packet[23][0],
+		make_word(magic_packet[23][2], magic_packet[23][3]),
+		make_word(magic_packet[23][4], magic_packet[23][5]),
+		magic_buffer[23],
+		make_word(magic_packet[23][6], magic_packet[23][7]),
+		1000
+	);
+
+	t150->joystick->open = t150_open;
 }
 
 static void t150_setup_end(struct urb *urb)
@@ -125,6 +230,8 @@ const char *nameWH = "ThrustMaster T150 steering wheel";
  */
 static inline int t150_init_input(struct t150 *t150)
 {
+	int i;
+
 	t150->joystick = input_allocate_device();
 	printk(KERN_INFO "t150: Il signor Kernel mi ha dato %p, che gentile!\n", t150->joystick);
 
@@ -147,23 +254,13 @@ static inline int t150_init_input(struct t150 *t150)
 	input_set_abs_params(t150->joystick, ABS_HAT0Y, -1, +1, 0, 0); // d-pad
 
 	// Buttons
-	input_set_capability(t150->joystick, EV_KEY, BTN_NORTH);  // Triangle
-	input_set_capability(t150->joystick, EV_KEY, BTN_EAST);   // Circle
-	input_set_capability(t150->joystick, EV_KEY, BTN_SOUTH);  // Cross
-	input_set_capability(t150->joystick, EV_KEY, BTN_WEST);   // Square
+	for(i = 0; i < buttons_state0_assoc_length; i++)
+		input_set_capability(t150->joystick, EV_KEY, buttons_state0_assoc[i].key);
 
-	input_set_capability(t150->joystick, EV_KEY, BTN_GEAR_DOWN); // L1
-	input_set_capability(t150->joystick, EV_KEY, BTN_GEAR_UP);   // R1
-	input_set_capability(t150->joystick, EV_KEY, BTN_TL);        // L2
-	input_set_capability(t150->joystick, EV_KEY, BTN_TR);        // R2
-	input_set_capability(t150->joystick, EV_KEY, BTN_TL2);       // L3
-	input_set_capability(t150->joystick, EV_KEY, BTN_TR2);       // R3
+	for(i = 0; i < buttons_state1_assoc_length; i++)
+		input_set_capability(t150->joystick, EV_KEY, buttons_state1_assoc[i].key);
 
-	input_set_capability(t150->joystick, EV_KEY, BTN_START); // ST / options
-	input_set_capability(t150->joystick, EV_KEY, BTN_SELECT); // SE / share
-	input_set_capability(t150->joystick, EV_KEY, BTN_GAMEPAD); // PS
-
-	t150->joystick->open = t150_open;
+	//t150->joystick->open = t150_open;
 	t150->joystick->close = t150_close;
 
 	usb_fill_int_urb(
@@ -174,10 +271,7 @@ static inline int t150_init_input(struct t150 *t150)
 		sizeof(struct joy_state_packet),
 		t150_update_input,
 		t150,
-		//interface->cur_altsetting->endpoint->desc.bInterval
-		// This is a rondom number I choose, I do not understand
-		// whats this field does :P
-		0x08 //4 * HZ //0x0f
+		t150->bInterval_in
 	);
 
 	// Start!
@@ -211,6 +305,8 @@ static void t150_update_input(struct urb *urb)
 {
 	struct joy_state_packet *ss = urb->transfer_buffer;
 	struct t150 *t150 = (struct t150*)urb->context;
+	struct d_pad_pos d_pad_current_pos;
+	int i;
 
 	//mutex_unlock(t150->lock);
 
@@ -230,18 +326,20 @@ static void t150_update_input(struct urb *urb)
 	);
 
 	// Reporting d-pad
-	struct d_pad_pos d_pad_current_pos = CROSS_POSITIONS[
+	d_pad_current_pos = CROSS_POSITIONS[
 		(ss->cross_state < 0x08) ? ss->cross_state : 0x08];
 
 	input_report_abs(t150->joystick, ABS_HAT0X, d_pad_current_pos.x);
 	input_report_abs(t150->joystick, ABS_HAT0Y, d_pad_current_pos.y);
 
 	// Report buttons
-	input_report_key(t150->joystick, BTN_GEAR_UP,
-		ss->buttons_state & BTN_GEAR_UP_MASK);
+	for(i = 0; i < buttons_state0_assoc_length; i++)
+		input_report_key(t150->joystick, buttons_state0_assoc[i].key,
+			ss->buttons_state0 & buttons_state0_assoc[i].mask);
 
-	input_report_key(t150->joystick, BTN_GEAR_DOWN,
-		ss->buttons_state & BTN_GEAR_DOWN_MASK);
+	for(i = 0; i < buttons_state1_assoc_length; i++)
+		input_report_key(t150->joystick, buttons_state1_assoc[i].key,
+			ss->buttons_state1 & buttons_state1_assoc[i].mask);
 
 	input_sync(t150->joystick);
 
@@ -304,19 +402,20 @@ static inline int t150_start_edit_settings(struct t150 *t150)
 {
 	int boh, i;
 
-	usb_control_msg(
-		t150->usb_device,
-		usb_sndctrlpipe(t150->usb_device, 0),
-		driver_settings_start[1],
-		driver_settings_start[0],
-		make_word(driver_settings_start[2], driver_settings_start[3]),
-		make_word(driver_settings_start[4], driver_settings_start[5]),
-		magic_buffer[0], // TODO no
-		make_word(driver_settings_start[6], driver_settings_start[7]),
-		50
-	);
+	for(i = 0; i < 3; i++)
+		usb_control_msg(
+			t150->usb_device,
+			usb_sndctrlpipe(t150->usb_device, 0),
+			driver_settings_start[1],
+			driver_settings_start[0],
+			make_word(driver_settings_start[2], driver_settings_start[3]),
+			make_word(driver_settings_start[4], driver_settings_start[5]),
+			magic_buffer[0], // TODO no
+			make_word(driver_settings_start[6], driver_settings_start[7]),
+			50
+		);
 
-	for(i = 0; i < init_win_len; i++)
+	/*for(i = 0; i < init_win_len; i++)
 	{
 		usb_interrupt_msg(
 			t150->usb_device,
@@ -333,12 +432,8 @@ static inline int t150_start_edit_settings(struct t150 *t150)
 			15, &boh,
 			50
 		);
-		printk(
-			KERN_INFO "t150: START packet: %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x\n",
-			ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], ss[6], ss[7],
-			ss[8], ss[9], ss[10],ss[11],ss[12],ss[13],ss[14]
-		);
-	}
+		printP(ss);
+	}*/
 
 	// We want to modify the Wheel settings
 	usb_interrupt_msg(
@@ -398,6 +493,18 @@ static inline int t150_stop_edit_settings(struct t150 *t150)
 	);
 	msleep(25);
 
+	usb_control_msg(
+		t150->usb_device,
+		usb_sndctrlpipe(t150->usb_device, 0),
+		driver_settings_start[1],
+		driver_settings_start[0],
+		make_word(driver_settings_start[2], driver_settings_start[3]),
+		make_word(driver_settings_start[4], driver_settings_start[5]),
+		magic_buffer[0], // TODO no
+		make_word(driver_settings_start[6], driver_settings_start[7]),
+		50
+	);
+
 	usb_interrupt_msg(
 		t150->usb_device,
 		t150->pipe_out,
@@ -440,7 +547,7 @@ static ssize_t t150_read_return_force(struct device *dev, struct device_attribut
 		t150->usb_device,
 		t150->pipe_out,
 		return_wheel_mode,
-		sizeof(return_wheel_mode), &boh,
+		4, &boh,
 		1000
 	);
 
@@ -511,7 +618,7 @@ static ssize_t t150_read_range(struct device *dev, struct device_attribute *attr
 
 	*((uint16_t *)&packet[2]) = cpu_to_le16(range);
 
-	t150_start_edit_settings(t150);
+	//t150_start_edit_settings(t150);
 
 	// Send to the wheel desidered return force
 	usb_interrupt_msg(
@@ -522,7 +629,7 @@ static ssize_t t150_read_range(struct device *dev, struct device_attribute *attr
 		1000
 	);
 
-	t150_stop_edit_settings(t150);
+	//t150_stop_edit_settings(t150);
 	return count;
 }
 

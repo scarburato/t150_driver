@@ -13,11 +13,16 @@ struct t150
 	struct joy_state_packet *joy_data_in;
 	struct urb *joy_request_in;
 	int pipe_in;
+	uint8_t bInterval_in;
 
 	// Stuff to write to the wheel
 	struct joy_state_packet *joy_data_in_dma;
 	struct urb *joy_request_out;
 	int pipe_out;
+	uint8_t bInterval_out;
+
+	/** Used to run the initial wheel setup */
+	struct task_struct *setup_task;
 
 	// sysf STUFF
 	struct kobject *kobj_my_dir;
@@ -74,9 +79,9 @@ struct joy_state_packet
 	uint8_t		__padding2; // UNKNOWN
 
 	/** Some buttons */
-	uint8_t		buttons_state;
+	uint8_t		buttons_state0;
+	uint8_t		buttons_state1;
 
-	uint8_t		__padding4; // UNKNOWN
 	uint8_t		__padding5; // UNKNOWN
 
 	uint8_t		cross_state;
@@ -112,9 +117,6 @@ struct set_return_force
 	uint8_t zero;
 };
 
-#define BTN_GEAR_UP_MASK	0b00000001
-#define BTN_GEAR_DOWN_MASK	0b00000010
-
 /**
  * Simple macro to make a word from two bytes
  * @low the low part of a word
@@ -125,7 +127,19 @@ static inline uint16_t make_word(const uint8_t low, const uint8_t high)
 	return ((uint16_t)low | ((uint8_t)(high) << 8));
 }
 
+static inline void printP(const uint8_t const* print)
+{
+	int i;
+	char printstr[55] = "t150: ";
+	for(i = 0; i < 15; i++)
+		sprintf(&printstr[6 + i*3],"%02hhX ", print[i]);
+	
+	printk(printstr);
+}
+
 /** Function declearatioinit_inpuns **/
+static int t150_inital_usb_setup(void *data);
+
 static inline int t150_init_input(struct t150 *t150);
 static void t150_setup_end(struct urb *urb);
 
