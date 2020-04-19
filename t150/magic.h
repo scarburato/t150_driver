@@ -57,7 +57,6 @@ static const uint8_t init_win[][15] = {
 static uint8_t return_wheel_mode[] = {0x40, 0x04, 0x01, 0x00};
 
 static uint8_t magic[] = {0x43, 0x60};
-static uint8_t range900[] = {0x40, 0x11, 0x55, 0xd5};
 
 static const size_t magic_apply_len = 3;
 static const uint8_t magic_apply[][15] = {

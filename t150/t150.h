@@ -34,18 +34,32 @@ struct t150
 	/** Mutex used to allow one operation at time on the Wheel */
 	struct mutex *lock;
 
-	volatile uint8_t current_rotation;
-	volatile uint8_t return_force;
+	volatile uint16_t current_rotation;
+	volatile uint8_t current_return_force;
 };
 
-/** [?] Packet to send to the Wheel when we want to edit its settings **/
+/** [SEEMS LIKE IT'S NOT NEEDED :P] Packet to send to the Wheel when we want to edit its settings **/
 static const uint8_t start_input_settings[] = {0x42, 0x04};
 
-/** [?] Packet to send to the Wheel when we want to apply the new settings **/
+/** [SEEMS LIKE IT'S NOT NEEDED :P] Packet to send to the Wheel when we want to apply the new settings **/
 static const uint8_t apply_input_settings[] = {0x42, 0x05};
 
-/** [?] Packet to send to the Wheel when we do not want to edit its settings anymore **/
+/** [SEEMS LIKE IT'S NOT NEEDED :P] Packet to send to the Wheel when we do not want to edit its settings anymore **/
 static const uint8_t stop_input_settings[] = {0x42, 0x00};
+
+static const uint8_t set_return_force[] = {
+	0x40,
+	0x03,
+	0x00, // Here the desidered return force from 0 to 100=0x64 
+	0x00, // Not used
+};
+
+static const uint8_t set_range[] = {
+	0x40,
+	0x11,
+	0x00, // Low part of range from 0x0000 (0°) to 0xffff (1080°)
+	0x00, // High part
+};
 
 //structs about packets entering the host
 /**
@@ -103,20 +117,6 @@ const struct d_pad_pos
 	{0, 0}
 };
 
-// structs about packets entering the wheel
-struct set_return_force
-{
-	/** Must be 0x40 to set the wheel pos*/
-	const uint8_t code0;
-	/** Must be 0x03*/
-	const uint8_t code1;
-
-	/** The force between 0x00 and 0x64 */
-	uint8_t return_force;
-
-	uint8_t zero;
-};
-
 /**
  * Simple macro to make a word from two bytes
  * @low the low part of a word
@@ -141,11 +141,10 @@ static inline void printP(const uint8_t const* print)
 static int t150_inital_usb_setup(void *data);
 
 static inline int t150_init_input(struct t150 *t150);
-static void t150_setup_end(struct urb *urb);
 
 static int t150_open(struct input_dev *dev);
 static void t150_close(struct input_dev *dev);
 
 static void t150_update_input(struct urb *urb);
-static inline int t150_free_sysf(struct t150 *t150, struct usb_interface *uif);
+static inline void t150_free_sysf(struct t150 *t150, struct usb_interface *uif);
 static inline int t150_init_sysf(struct t150 *t150, struct usb_interface *uif);
