@@ -103,8 +103,8 @@ struct joy_state_packet
 
 const struct d_pad_pos
 {
-	int8_t x;
 	int8_t y;
+	int8_t x;
 } CROSS_POSITIONS[] = {
 	{+1,  0}, // 0x00 north
 	{+1, +1}, // 0x01 north-est
