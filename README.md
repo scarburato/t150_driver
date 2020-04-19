@@ -6,9 +6,11 @@
 At the moment the `t150` module has memory leaks in case of errors in the `t150_probe` function
 
 ### What's working 👌
-+ All axis and buttons of the wheel are reported
++ All axis and buttons of the wheel are reported¹
 + You can set the range of the wheel from 270° to 1080°
 + You can set the return force of the wheel from 0% to 100%
+
+¹: Except for the shifter buttons, because I don't have the PRO version. However, I've guessed the clutch axis.
 
 ### What is missing 🚧
 - Reading the settings from the wheel
