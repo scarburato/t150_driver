@@ -12,13 +12,14 @@ At the moment the `t150` module has memory leaks in case of errors in the `t150_
 
 ### What is missing 🚧
 - Reading the settings from the wheel
+- Automatically default setting when the wheel is attached to the machine 
 - This driver is not used by the Kernel when the `hid` module is loaded
 - Force feedback
 - Force feedback settings
 - Firmware upgrades
 
 ## How to use the driver
-**Always put the switch of your wheel to the `PS3` position before plug it into your machine**
+**Always put the switch of your wheel to the `PS3` position before plug it into your machine!**
 
 ### Switch the wheel from FFB to full T150
 When attached to your machine the wheel reports itself as `Thrustmaster FFB Wheel`, in this mode not all functionalities
