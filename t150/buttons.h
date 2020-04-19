@@ -22,5 +22,5 @@ static const struct button_mask buttons_state1_assoc[] = {
 	{ BTN_TL,		0b00000010},
 	{ BTN_TR2,		0b00000100},
 	{ BTN_TL2,		0b00001000},
-	{ BTN_GAMEPAD,		0b00010000}
+	{ BTN_JOYSTICK,		0b00010000}
 };
