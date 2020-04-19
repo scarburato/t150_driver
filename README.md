@@ -5,12 +5,12 @@
 ## Project status
 At the moment the `t150` module has memory leaks in case of errors in the `t150_probe` function
 
-### What's working
+### What's working 👌
 + All axis and buttons of the wheel are reported
 + You can set the range of the wheel from 270° to 1080°
 + You can set the return force of the wheel from 0% to 100%
 
-### What is missing
+### What is missing 🚧
 - Reading the settings from the wheel
 - This driver is not used by the Kernel when the `hid` module is loaded
 - Force feedback
@@ -48,4 +48,17 @@ This table contains a summary of each attribute
 |`return_force`     |decimal from `0` to `100`     |The force used to re-center the wheel                             |
 
 ## How to install and load the driver
+
+### Build the drivers
+For a simple build: install all the required tools to compile (like `build-essential`, `linux-headers` etc...) and run
+```
+make
+```
+into the repo's root. Now, if everything went right, in `build/` you should have the two modules `t150.ko` and `ffb.ko`
+ready to be loaded into the Kernel. You can load them with 
+```
+insmod ffb.ko
+insmod t150.ko
+```
+
 ...
