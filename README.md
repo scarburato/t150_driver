@@ -49,6 +49,8 @@ This table contains a summary of each attribute
 |-------------------|------------------------------|------------------------------------------------------------------|
 |`range`            |decimal from `270` to `1080`  |How far the wheel turns                                           |
 |`return_force`     |decimal from `0` to `100`     |The force used to re-center the wheel                             |
+|`use_return_force` |boolean                       |Use the user defined return force or let the game handle it trough ffb|
+|`ffb_intensity`    |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |
 
 ## How to install and load the driver
 

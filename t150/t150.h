@@ -38,29 +38,6 @@ struct t150
 	volatile uint8_t current_return_force;
 };
 
-/** [SEEMS LIKE IT'S NOT NEEDED :P] Packet to send to the Wheel when we want to edit its settings **/
-static const uint8_t start_input_settings[] = {0x42, 0x04};
-
-/** [SEEMS LIKE IT'S NOT NEEDED :P] Packet to send to the Wheel when we want to apply the new settings **/
-static const uint8_t apply_input_settings[] = {0x42, 0x05};
-
-/** [SEEMS LIKE IT'S NOT NEEDED :P] Packet to send to the Wheel when we do not want to edit its settings anymore **/
-static const uint8_t stop_input_settings[] = {0x42, 0x00};
-
-static const uint8_t set_return_force[] = {
-	0x40,
-	0x03,
-	0x00, // Here the desidered return force from 0 to 100=0x64 
-	0x00, // Not used
-};
-
-static const uint8_t set_range[] = {
-	0x40,
-	0x11,
-	0x00, // Low part of range from 0x0000 (0°) to 0xffff (1080°)
-	0x00, // High part
-};
-
 //structs about packets entering the host
 /**
  *
@@ -137,14 +114,8 @@ static inline void printP(const uint8_t const* print)
 	printk(printstr);
 }
 
-/** Function declearatioinit_inpuns **/
+/** Function declearatioinit **/
 static int t150_inital_usb_setup(void *data);
-
-static inline int t150_init_input(struct t150 *t150);
 
 static int t150_open(struct input_dev *dev);
 static void t150_close(struct input_dev *dev);
-
-static void t150_update_input(struct urb *urb);
-static inline void t150_free_sysf(struct t150 *t150, struct usb_interface *uif);
-static inline int t150_init_sysf(struct t150 *t150, struct usb_interface *uif);
