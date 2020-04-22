@@ -80,7 +80,7 @@ static ssize_t t150_store_range(struct device *dev, struct device_attribute *att
 		range = 270;
 	else if (range > 1080)
 		range = 1080;
-	
+
 	range = (range * 0xffff) / 1080;
 
 	t150_settings_set40(t150, SET40_RANGE, range, set);
@@ -110,7 +110,7 @@ static ssize_t t150_store_ffb_intensity(struct device *dev, struct device_attrib
 
 	if(nforce > 100)
 		nforce = 100;
-	
+
 	nforce = (nforce * 0x80)/100;
 
 	t150_settings_set43(t150, nforce, set);
