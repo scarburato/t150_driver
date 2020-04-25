@@ -4,6 +4,11 @@ static const char *no_str = "Non implementato :/ \n";
 /** **/
 
 struct joy_state_packet;
+struct ff_first;
+struct ff_second;
+struct ff_third;
+struct ff_change_effect_status;
+
 struct t150
 {
 	// USB stuff
@@ -20,6 +25,14 @@ struct t150
 	struct urb *joy_request_out;
 	int pipe_out;
 	uint8_t bInterval_out;
+
+	// packets to be used with ffb
+	struct ff_first *ff_first;
+	struct ff_second *ff_second;
+	struct ff_third *ff_third;
+	struct ff_change_effect_status *ff_change_effect_status;
+
+	struct urb *ff_urbs;
 
 	/** Used to run the initial wheel setup */
 	struct task_struct *setup_task;

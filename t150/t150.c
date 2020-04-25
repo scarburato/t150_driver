@@ -16,6 +16,7 @@
 #include "input.h"
 #include "attributes.h"
 #include "settings.h"
+#include "forcefeedback.h"
 
 /** Init for a t150 data struct
  * @param t150 pointer to the t150 structor to init
@@ -72,6 +73,9 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 	t150->bInterval_out = ep_irq_out->bInterval;
 
 	t150_init_input(t150);
+	t150_init_ffb(t150);
+	input_register_device(t150->joystick);
+	
 	t150_init_attributes(t150, interface);
 
 	// Default settings here
@@ -139,6 +143,9 @@ static void t150_disconnect(struct usb_interface *interface)
 	usb_free_urb(t150->joy_request_in);
 	usb_free_urb(t150->joy_request_out);
 
+	// Force feedback 
+	t150_close_ffb(t150);
+
 	// input deregister
 	t150_free_input(t150);
 
@@ -156,6 +163,8 @@ static void t150_disconnect(struct usb_interface *interface)
 #include "attributes.c"
 #include "input.c"
 #include "settings.c"
+#include "forcefeedback.c"
+
 
 /********************************************************************
  *			MODULE STUFF
