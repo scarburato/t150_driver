@@ -19,10 +19,13 @@ struct __packed ff_first
 struct __packed ff_second 
 {
 	uint16_t	f0;
-	/** Do not knwo how it works */
-	uint16_t	magnitude;
-	/** Do not know how it works */
-	uint16_t	f1;
+	uint8_t		f1;
+	/** Truncked value of maginute on 16 bit */
+	int8_t		magnitude;
+	/** Trunked value of offset  */
+	int8_t		offset;
+	/** Phase where 0x00 = 0° and 0xff = 360° */
+	uint8_t		phase;
 	/** Period in milliseconds */
 	uint16_t	period;
 };

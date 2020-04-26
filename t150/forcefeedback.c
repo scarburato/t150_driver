@@ -86,8 +86,10 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	printk(KERN_INFO "t150: Still alive or locked ?\n");
 
 	t150->ff_second->f0 = cpu_to_le16(0x0e04);
-	t150->ff_second->magnitude = cpu_to_le16(p_effect->magnitude);
-	t150->ff_second->f1 = 0x0000;
+	t150->ff_second->f1 = 0x00;
+	t150->ff_second->magnitude = p_effect->magnitude;
+	t150->ff_second->offset = p_effect->offset;
+	t150->ff_second->phase = (p_effect->phase * 0xff) / (360*100); // Check if correct
 	t150->ff_second->period = cpu_to_le16(p_effect->period);
 
 	usb_interrupt_msg(
