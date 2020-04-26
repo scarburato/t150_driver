@@ -129,6 +129,3 @@ static inline void printP(const uint8_t const* print)
 
 /** Function declearatioinit **/
 static int t150_inital_usb_setup(void *data);
-
-static int t150_open(struct input_dev *dev);
-static void t150_close(struct input_dev *dev);

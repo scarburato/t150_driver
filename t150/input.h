@@ -11,6 +11,9 @@ static void t150_input_close(struct input_dev *dev);
 static void t150_update_input(struct urb *urb);
 
 const static char *nameWH = "ThrustMaster T150 steering wheel";
+static uint16_t *packet_input_open = 0;
+static uint16_t *packet_input_what = 0;
+static uint16_t *packet_input_close = 0; 
 
 static const size_t buttons_state0_assoc_length = 8;
 static const struct button_mask buttons_state0_assoc[] = {

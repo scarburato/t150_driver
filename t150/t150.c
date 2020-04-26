@@ -123,7 +123,7 @@ static int t150_inital_usb_setup(void *data)
 
 	printk("t150: setup started!");
 
-	t150->joystick->open = t150_open;
+	t150->joystick->open = t150_input_open;
 	return 0;
 }
 
@@ -188,11 +188,41 @@ static struct usb_driver t150_driver =
 
 static int __init t150_init(void)
 {
-	return usb_register(&t150_driver);
+	int errno = -ENOMEM;
+	packet_input_open = kzalloc(sizeof(uint16_t), GFP_KERNEL);
+	if(!packet_input_open)
+		goto err0;
+
+	packet_input_what = kzalloc(sizeof(uint16_t), GFP_KERNEL);
+	if(!packet_input_what)
+		goto err1;
+
+	packet_input_close = kzalloc(sizeof(uint16_t), GFP_KERNEL);
+	if(!packet_input_close)
+		goto err2;
+
+	*packet_input_open = cpu_to_le16(0x0442);
+	*packet_input_what = cpu_to_le16(0x0542);
+	*packet_input_close = cpu_to_le16(0x0042);
+
+	errno = usb_register(&t150_driver);
+	if(errno)
+		goto err3;
+	else
+		return 0;
+
+err3:	kzfree(packet_input_close);
+err2:	kzfree(packet_input_what);
+err1:	kzfree(packet_input_open);
+err0:	return errno;
 }
 
 static void __exit t150_exit(void)
 {
+	kzfree(packet_input_open);
+	kzfree(packet_input_what);
+	kzfree(packet_input_close);
+
 	usb_deregister(&t150_driver);
 }
 

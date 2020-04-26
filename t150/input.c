@@ -65,8 +65,26 @@ static inline void t150_free_input(struct t150 *t150)
 static int t150_input_open(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
-	printk("t150: inizio!");
+	int boh, i;
+	printk(KERN_INFO "t150: opening input!");
 	//mutex_lock(t150->lock);
+
+	// Send magic codes
+	/*for(i = 0; i < 2; i++)
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->pipe_out,
+			packet_input_what, 2, &boh,
+			1000
+		);*/
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		packet_input_open, 2, &boh,
+		1000
+	);
+
 	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
 	return 0;
 }
@@ -74,23 +92,26 @@ static int t150_input_open(struct input_dev *dev)
 static void t150_input_close(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
-	usb_kill_urb(t150->joy_request_in);
-}
+	int boh, i;
 
-/** Function */
-static int t150_open(struct input_dev *dev)
-{
-	struct t150 *t150 = input_get_drvdata(dev);
-	printk("t150: inizio!");
-	//mutex_lock(t150->lock);
-	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
-	return 0;
-}
-
-static void t150_close(struct input_dev *dev)
-{
-	struct t150 *t150 = input_get_drvdata(dev);
+	printk(KERN_INFO "t150: closing input!");
 	usb_kill_urb(t150->joy_request_in);
+
+	// Send magic codes
+	/*for(i = 0; i < 2; i++)
+		usb_interrupt_msg(
+			t150->usb_device,
+			t150->pipe_out,
+			packet_input_what, 2, &boh,
+			1000
+		);*/
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		packet_input_close, 2, &boh,
+		1000
+	);
 }
 
 /**

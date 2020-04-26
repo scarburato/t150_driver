@@ -140,7 +140,24 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 
 static int t150_ff_erase(struct input_dev *dev, int effect_id)
 {
-	printk(KERN_WARNING "t150: I should destroy %i now...\n", effect_id);
+	//printk(KERN_WARNING "t150: I should destroy %i now...\n", effect_id);
+	struct t150 *t150 = input_get_drvdata(dev);
+	int boh;
+
+	t150->ff_change_effect_status->f0 = 0x41;
+	t150->ff_change_effect_status->id = effect_id;
+	t150->ff_change_effect_status->mode = 0x00;
+	t150->ff_change_effect_status->f1 = 0x01;
+
+	usb_interrupt_msg(
+		t150->usb_device,
+		t150->pipe_out,
+		t150->ff_change_effect_status,
+		sizeof(struct ff_change_effect_status), &boh,
+		1000
+	);
+
+	return 0;
 }
 
 static int t150_ff_play(struct input_dev *dev, int effect_id, int value)
@@ -158,7 +175,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int value)
 		t150->pipe_out,
 		t150->ff_change_effect_status,
 		sizeof(struct ff_change_effect_status), &boh,
-		500
+		1000
 	);
 
 	return 0;
