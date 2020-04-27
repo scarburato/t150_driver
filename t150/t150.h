@@ -117,6 +117,16 @@ static inline uint16_t make_word(const uint8_t low, const uint8_t high)
 	return ((uint16_t)low | ((uint8_t)(high) << 8));
 }
 
+static inline uint8_t word_high(const uint16_t word)
+{
+	return word >> 8;
+}
+
+static inline uint8_t word_low(const uint16_t word)
+{
+	return word;
+}
+
 static inline void printP(const uint8_t const* print)
 {
 	int i;

@@ -22,7 +22,6 @@ static int t150_init_ffb(struct t150 *t150)
 	if(!t150->ff_change_effect_status)
 		goto err3;
 
-	set_bit(ABS_WHEEL, t150->joystick->ffbit);
 	for (i = 0; i < t150_ffb_effects_length; i++)
 	{
 		set_bit(t150_ffb_effects[i], t150->joystick->ffbit);
@@ -57,7 +56,9 @@ err0:	return -1;
 
 static void t150_close_ffb(struct t150 *t150)
 {
-
+	kzfree(t150->ff_third);
+	kzfree(t150->ff_second);
+	kzfree(t150->ff_first);
 }
 
 static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struct ff_effect *old)
@@ -87,8 +88,8 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 
 	t150->ff_second->f0 = cpu_to_le16(0x0e04);
 	t150->ff_second->f1 = 0x00;
-	t150->ff_second->magnitude = p_effect->magnitude;
-	t150->ff_second->offset = p_effect->offset;
+	t150->ff_second->magnitude = word_high(p_effect->magnitude);
+	t150->ff_second->offset = word_high(p_effect->offset);
 	t150->ff_second->phase = (p_effect->phase * 0xff) / (360*100); // Check if correct
 	t150->ff_second->period = cpu_to_le16(p_effect->period);
 
@@ -107,7 +108,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	t150->ff_third->f2 = cpu_to_le16(0x0e00);
 	t150->ff_third->f3 = cpu_to_le16(0x1c00);
 	t150->ff_third->f4 = 0;
-	t150->ff_third->delay = effect->replay.delay;
+	t150->ff_third->delay = word_high(effect->replay.delay);
 	t150->ff_third->f5 = 0;
 
 	switch (effect->type)
