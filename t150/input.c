@@ -82,7 +82,7 @@ static int t150_input_open(struct input_dev *dev)
 		t150->usb_device,
 		t150->pipe_out,
 		packet_input_open, 2, &boh,
-		1000
+		8
 	);
 
 	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
@@ -110,7 +110,7 @@ static void t150_input_close(struct input_dev *dev)
 		t150->usb_device,
 		t150->pipe_out,
 		packet_input_close, 2, &boh,
-		1000
+		8
 	);
 }
 

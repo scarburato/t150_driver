@@ -81,7 +81,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		t150->pipe_out,
 		t150->ff_first,
 		sizeof(struct ff_first), &boh,
-		1000
+		8
 	);
 
 	printk(KERN_INFO "t150: Still alive or locked ?\n");
@@ -98,7 +98,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		t150->pipe_out,
 		t150->ff_second,
 		sizeof(struct ff_second), &boh,
-		1000
+		8
 	);
 
 	t150->ff_third->f0 = 0x01;
@@ -130,7 +130,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		t150->pipe_out,
 		t150->ff_third,
 		sizeof(struct ff_third), &boh,
-		1000
+		8
 	);
 	
 	return 0;
@@ -157,7 +157,7 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 		t150->pipe_out,
 		t150->ff_change_effect_status,
 		sizeof(struct ff_change_effect_status), &boh,
-		1000
+		8
 	);
 
 	return 0;
@@ -178,7 +178,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int value)
 		t150->pipe_out,
 		t150->ff_change_effect_status,
 		sizeof(struct ff_change_effect_status), &boh,
-		1000
+		8
 	);
 
 	return 0;
