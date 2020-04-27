@@ -53,7 +53,7 @@ struct __packed ff_change_effect_status
 	uint8_t f0;
 	uint8_t id;
 	uint8_t mode;
-	uint8_t f1;
+	uint8_t times;
 };
 
 static int t150_init_ffb(struct t150 *t150);

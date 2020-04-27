@@ -150,7 +150,7 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 	t150->ff_change_effect_status->f0 = 0x41;
 	t150->ff_change_effect_status->id = effect_id;
 	t150->ff_change_effect_status->mode = 0x00;
-	t150->ff_change_effect_status->f1 = 0x01;
+	t150->ff_change_effect_status->times = 0x01;
 
 	usb_interrupt_msg(
 		t150->usb_device,
@@ -163,15 +163,24 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 	return 0;
 }
 
-static int t150_ff_play(struct input_dev *dev, int effect_id, int value)
+static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh;
 
+	printk(KERN_INFO "t150: I have to reproduce the effect %i for %i time(s)",effect_id, times);
+
+	if(times == 0)
+		return;
+
+	// @TODO Check if the wheel can play infinte times
+	if(times > 0xff)
+		times = 0xee;
+
 	t150->ff_change_effect_status->f0 = 0x41;
 	t150->ff_change_effect_status->id = effect_id;
 	t150->ff_change_effect_status->mode = 0x41;
-	t150->ff_change_effect_status->f1 = 0x01;
+	t150->ff_change_effect_status->times = times;
 
 	usb_interrupt_msg(
 		t150->usb_device,
