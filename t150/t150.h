@@ -96,14 +96,14 @@ const struct d_pad_pos
 	int8_t y;
 	int8_t x;
 } CROSS_POSITIONS[] = {
-	{+1,  0}, // 0x00 north
-	{+1, +1}, // 0x01 north-est
+	{-1,  0}, // 0x00 north
+	{-1, +1}, // 0x01 north-est
 	{0 , +1}, // 0x02 test
-	{-1, +1}, // 0x03 south-est
-	{-1,  0}, // 0x04 south
-	{-1, -1}, // 0x05 south-west
+	{+1, +1}, // 0x03 south-est
+	{+1,  0}, // 0x04 south
+	{+1, -1}, // 0x05 south-west
 	{0 , -1}, // 0x06 west
-	{+1, -1}, // 0x07 nort-west
+	{-1, -1}, // 0x07 north-west
 	{0, 0}
 };
 
@@ -133,7 +133,7 @@ static inline void printP(const uint8_t const* print)
 	char printstr[55] = "t150: ";
 	for(i = 0; i < 15; i++)
 		sprintf(&printstr[6 + i*3],"%02hhX ", print[i]);
-	
+
 	printk(printstr);
 }
 
