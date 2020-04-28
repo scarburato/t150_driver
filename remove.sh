@@ -1,1 +1,1 @@
-sudo rmmod usbhid hid_generic hid
+/sbin/rmmod usbhid hid_generic hid

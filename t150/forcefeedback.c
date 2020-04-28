@@ -1,3 +1,7 @@
+static void donothing_callback(struct urb *urb)
+{
+}
+
 static int t150_init_ffb(struct t150 *t150)
 {
 	int errno, i;
@@ -35,7 +39,7 @@ static int t150_init_ffb(struct t150 *t150)
 		t150->pipe_out,
 		t150->ff_first,
 		sizeof(struct ff_first),
-		NULL,
+		donothing_callback,
 		t150,
 		t150->bInterval_out
 	);
@@ -46,7 +50,7 @@ static int t150_init_ffb(struct t150 *t150)
 		t150->pipe_out,
 		t150->ff_second,
 		sizeof(struct ff_second),
-		NULL,
+		donothing_callback,
 		t150,
 		t150->bInterval_out
 	);
@@ -57,7 +61,7 @@ static int t150_init_ffb(struct t150 *t150)
 		t150->pipe_out,
 		t150->ff_third,
 		sizeof(struct ff_third),
-		NULL,
+		donothing_callback,
 		t150,
 		t150->bInterval_out
 	);
@@ -68,7 +72,7 @@ static int t150_init_ffb(struct t150 *t150)
 		t150->pipe_out,
 		t150->ff_change_effect_status,
 		sizeof(struct ff_change_effect_status),
-		NULL,
+		donothing_callback,
 		t150,
 		t150->bInterval_out
 	);
@@ -166,17 +170,13 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	for(i = 0; i < 3; i++)
 	{
 		errno = usb_submit_urb(t150->ff_upload_urbs[i], GFP_ATOMIC);
+		printk(KERN_ERR "t150: submitting urb, error %i\n", errno);
 		if(errno)
 			return errno;
 	}
 	
 	return 0;
 }
-
-/*static void free_callback(struct urb *urb)
-{
-	kzfree(urb->transfer_buffer);
-}*/
 
 static int t150_ff_erase(struct input_dev *dev, int effect_id)
 {
@@ -197,7 +197,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh;
 
-	printk(KERN_INFO "t150: I have to reproduce the effect %i for %i time(s)",effect_id, times);
+	printk(KERN_INFO "t150: I have to reproduce the effect %i for %i time(s)\n",effect_id, times);
 
 	if(times == 0)
 		return;
@@ -211,5 +211,5 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	t150->ff_change_effect_status->mode = 0x41;
 	t150->ff_change_effect_status->times = times;
 
-	usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
+	return usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
 }
