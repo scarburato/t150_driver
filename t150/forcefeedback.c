@@ -1,7 +1,3 @@
-static void donothing_callback(struct urb *urb)
-{
-}
-
 static int t150_init_ffb(struct t150 *t150)
 {
 	int errno, i;
@@ -33,6 +29,8 @@ static int t150_init_ffb(struct t150 *t150)
 	if(!t150->ff_change_urbs)
 		goto err5;
 
+	mutex_init(&t150->ff_mutex);
+	
 	usb_fill_int_urb(
 		t150->ff_upload_urbs[0],
 		t150->usb_device,
@@ -127,8 +125,15 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	int errno, i;
 	struct ff_periodic_effect *p_effect = &(effect->u.periodic);
 
-	printk(KERN_INFO "t150: FFB_Uploading...\n");
+	printk(KERN_INFO "t150: Uploading effect with id %i...\n", effect->id);
+	errno = mutex_lock_interruptible(&t150->ff_mutex);
+	if(errno)
+	{
+		printk(KERN_ERR "t150: unable to acquire lock, errno %i\n", errno);
+		return errno;
+	}
 
+	/** Preparing effect */
 	t150->ff_first->f0 = cpu_to_le16(0x1c02);
 	t150->ff_first->f1 = 0;
 	t150->ff_first->attack_length = cpu_to_le16(p_effect->envelope.attack_length);
@@ -167,13 +172,18 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		break;
 	}
 
+	/** Submiting the effect to the wheel */
 	for(i = 0; i < 3; i++)
 	{
 		errno = usb_submit_urb(t150->ff_upload_urbs[i], GFP_ATOMIC);
-		printk(KERN_ERR "t150: submitting urb, error %i\n", errno);
 		if(errno)
+		{
+			printk(KERN_ERR "t150: submitting urb, error %i\n", errno);
 			return errno;
+		}
 	}
+
+	mutex_unlock(&t150->ff_mutex);
 	
 	return 0;
 }
@@ -182,20 +192,29 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 {
 	//printk(KERN_WARNING "t150: I should destroy %i now...\n", effect_id);
 	struct t150 *t150 = input_get_drvdata(dev);
-	int boh;
+	int errno;
+
+	errno = mutex_lock_interruptible(&t150->ff_mutex);
+	if(errno)
+	{
+		printk(KERN_ERR "t150: unable to acquire lock, errno %i\n", errno);
+		return errno;
+	}
 
 	t150->ff_change_effect_status->f0 = 0x41;
 	t150->ff_change_effect_status->id = effect_id;
 	t150->ff_change_effect_status->mode = 0x00;
 	t150->ff_change_effect_status->times = 0x01;
 
-	usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
+	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
+	mutex_unlock(&t150->ff_mutex);
+	return errno;
 }
 
 static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
-	int boh;
+	int errno;
 
 	printk(KERN_INFO "t150: I have to reproduce the effect %i for %i time(s)\n",effect_id, times);
 
@@ -206,10 +225,19 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	if(times > 0xff)
 		times = 0xee;
 
+	errno = mutex_lock_interruptible(&t150->ff_mutex);
+	if(errno)
+	{
+		printk(KERN_ERR "t150: unable to acquire lock, errno %i\n", errno);
+		return errno;
+	}
+
 	t150->ff_change_effect_status->f0 = 0x41;
 	t150->ff_change_effect_status->id = effect_id;
 	t150->ff_change_effect_status->mode = 0x41;
 	t150->ff_change_effect_status->times = times;
 
-	return usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
+	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
+	mutex_unlock(&t150->ff_mutex);
+	return errno;
 }

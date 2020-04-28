@@ -18,6 +18,8 @@
 #include "settings.h"
 #include "forcefeedback.h"
 
+static void donothing_callback(struct urb *urb) {}
+
 /** Init for a t150 data struct
  * @param t150 pointer to the t150 structor to init
  * @param interface pointer to usb interface which the wheel is connected to
