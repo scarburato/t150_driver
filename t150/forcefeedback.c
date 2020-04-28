@@ -30,7 +30,7 @@ static int t150_init_ffb(struct t150 *t150)
 		goto err5;
 
 	usb_fill_int_urb(
-		t150->ff_upload_urbs[i],
+		t150->ff_upload_urbs[0],
 		t150->usb_device,
 		t150->pipe_out,
 		t150->ff_first,
@@ -41,7 +41,7 @@ static int t150_init_ffb(struct t150 *t150)
 	);
 
 	usb_fill_int_urb(
-		t150->ff_upload_urbs[i],
+		t150->ff_upload_urbs[1],
 		t150->usb_device,
 		t150->pipe_out,
 		t150->ff_second,
@@ -52,7 +52,7 @@ static int t150_init_ffb(struct t150 *t150)
 	);
 
 	usb_fill_int_urb(
-		t150->ff_upload_urbs[i],
+		t150->ff_upload_urbs[2],
 		t150->usb_device,
 		t150->pipe_out,
 		t150->ff_third,
@@ -107,7 +107,7 @@ err0:	return -1;
 static void t150_close_ffb(struct t150 *t150)
 {
 	int i;
-	
+
 	usb_free_urb(t150->ff_change_urbs);
 	for(i = 0; i < 3; i++)
 		usb_free_urb(t150->ff_upload_urbs[i]);
