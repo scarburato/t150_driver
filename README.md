@@ -37,7 +37,7 @@ wValue = 0x0006
 wIndex = 0
 wLength = 0
 ``` 
-To do so we can use the [`thrustmaster_enable_full`](./ffb/thrustmaster_enable_full.c) driver from this project xor you can write a simple userspace applications like 
+To do so we can use the [`thrustmaster_enable_full`](./thrustmaster_enable_full/thrustmaster_enable_full.c) driver from this project xor you can write a simple userspace applications like 
 [this one](https://gitlab.com/her0/tmdrv) thanks to `libusb`.
 
 When the wheel receives the control packet it will reset and re-appear in the system as a T150.
