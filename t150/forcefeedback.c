@@ -1,3 +1,10 @@
+static void t150_ff_relase_mutex_callback(struct urb *urb) 
+{
+	struct t150 *t150 = urb->context;
+	mutex_unlock(&t150->ff_mutex);
+}
+
+
 static int t150_init_ffb(struct t150 *t150)
 {
 	int errno, i;
@@ -59,7 +66,7 @@ static int t150_init_ffb(struct t150 *t150)
 		t150->pipe_out,
 		t150->ff_third,
 		sizeof(struct ff_third),
-		donothing_callback,
+		t150_ff_relase_mutex_callback,
 		t150,
 		t150->bInterval_out
 	);
@@ -70,7 +77,7 @@ static int t150_init_ffb(struct t150 *t150)
 		t150->pipe_out,
 		t150->ff_change_effect_status,
 		sizeof(struct ff_change_effect_status),
-		donothing_callback,
+		t150_ff_relase_mutex_callback,
 		t150,
 		t150->bInterval_out
 	);
@@ -181,10 +188,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 			printk(KERN_ERR "t150: submitting urb, error %i\n", errno);
 			return errno;
 		}
-	}
-
-	mutex_unlock(&t150->ff_mutex);
-	
+	}	
 	return 0;
 }
 
@@ -207,7 +211,6 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 	t150->ff_change_effect_status->times = 0x01;
 
 	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
-	mutex_unlock(&t150->ff_mutex);
 	return errno;
 }
 
@@ -238,6 +241,5 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	t150->ff_change_effect_status->times = times;
 
 	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
-	mutex_unlock(&t150->ff_mutex);
 	return errno;
 }
