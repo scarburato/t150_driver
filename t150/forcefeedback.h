@@ -76,7 +76,7 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id);
 static int t150_ff_play(struct input_dev *dev, int effect_id, int value);
 static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain);
 
-static uint8_t t150_ffb_effects_length = 4;
+static uint8_t t150_ffb_effects_length = 5;
 static const int16_t t150_ffb_effects[] = {
 	FF_GAIN,
 
