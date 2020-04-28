@@ -6,7 +6,7 @@ struct joy_state_packet;
 struct ff_first;
 struct ff_second;
 struct ff_third;
-struct ff_change_effect_status;
+union ff_change;
 
 struct t150
 {
@@ -31,7 +31,7 @@ struct t150
 	struct ff_first *ff_first;
 	struct ff_second *ff_second;
 	struct ff_third *ff_third;
-	struct ff_change_effect_status *ff_change_effect_status;
+	union ff_change *ff_change;
 
 	struct urb *ff_upload_urbs[3];
 	struct urb *ff_change_urbs;

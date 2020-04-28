@@ -28,8 +28,8 @@ static inline int t150_init_ffb(struct t150 *t150)
 	if(!t150->ff_third)
 		goto err2;
 
-	t150->ff_change_effect_status = kzalloc(sizeof(struct urb), GFP_KERNEL);
-	if(!t150->ff_change_effect_status)
+	t150->ff_change = kzalloc(sizeof(union ff_change), GFP_KERNEL);
+	if(!t150->ff_change)
 		goto err3;
 
 	for(i = 0; i < 3; i++)
@@ -83,8 +83,8 @@ static inline int t150_init_ffb(struct t150 *t150)
 		t150->ff_change_urbs,
 		t150->usb_device,
 		t150->pipe_out,
-		t150->ff_change_effect_status,
-		sizeof(struct ff_change_effect_status),
+		t150->ff_change,
+		sizeof(union ff_change),
 		t150_ff_relase_mutex_callback,
 		t150,
 		t150->bInterval_out
@@ -107,6 +107,7 @@ static inline int t150_init_ffb(struct t150 *t150)
 	t150->joystick->ff->upload = t150_ff_upload;
 	t150->joystick->ff->erase = t150_ff_erase;
 	t150->joystick->ff->playback = t150_ff_play;
+	t150->joystick->ff->set_gain = t150_ff_set_gain;
 
 	return 0;
 
@@ -233,10 +234,10 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 		return errno;
 	}
 
-	t150->ff_change_effect_status->f0 = 0x41;
-	t150->ff_change_effect_status->id = effect_id;
-	t150->ff_change_effect_status->mode = 0x00;
-	t150->ff_change_effect_status->times = 0x01;
+	t150->ff_change->effect.f0 = 0x41;
+	t150->ff_change->effect.id = effect_id;
+	t150->ff_change->effect.mode = 0x00;
+	t150->ff_change->effect.times = 0x01;
 
 	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
 	return errno;
@@ -274,10 +275,33 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 		return errno;
 	}
 
-	t150->ff_change_effect_status->f0 = 0x41;
-	t150->ff_change_effect_status->id = effect_id;
-	t150->ff_change_effect_status->mode = 0x41;
-	t150->ff_change_effect_status->times = times;
+	t150->ff_change->effect.f0 = 0x41;
+	t150->ff_change->effect.id = effect_id;
+	t150->ff_change->effect.mode = 0x41;
+	t150->ff_change->effect.times = times;
+
+	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
+	return errno;
+}
+
+/**
+ * @param dev
+ * @param gain 0xFFFF = 100% of gain 
+ */
+static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
+{
+	struct t150 *t150 = input_get_drvdata(dev);
+	int errno;
+
+	errno = mutex_lock_interruptible(&t150->ff_mutex);
+	if(errno)
+	{
+		printk(KERN_ERR "t150: unable to acquire lock, errno %i\n", errno);
+		return errno;
+	}
+
+	t150->ff_change->gain.f0 = 0x43;
+	t150->ff_change->gain.gain = gain / 0x1ff;
 
 	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
 	return errno;

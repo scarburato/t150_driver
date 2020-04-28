@@ -56,15 +56,30 @@ struct __packed ff_change_effect_status
 	uint8_t times;
 };
 
+struct __packed ff_change_gain
+{
+	uint8_t f0;
+	uint8_t gain;
+};
+
+union __packed ff_change
+{
+	struct ff_change_effect_status effect;
+	struct ff_change_gain gain;
+};
+
 static int t150_init_ffb(struct t150 *t150);
 static void t150_close_ffb(struct t150 *t150);
 
 static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struct ff_effect *old);
 static int t150_ff_erase(struct input_dev *dev, int effect_id);
 static int t150_ff_play(struct input_dev *dev, int effect_id, int value);
+static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain);
 
 static uint8_t t150_ffb_effects_length = 4;
 static const int16_t t150_ffb_effects[] = {
+	FF_GAIN,
+
 	FF_PERIODIC,
 	FF_SINE,
 	FF_SAW_UP,
