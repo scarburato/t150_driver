@@ -30,7 +30,7 @@ struct urb *request_full_func;
 
 static void wheel_callback(struct urb *urb)
 {
-	printk(KERN_INFO "Ò fatto la richiesta, ottenuta risposta!\n");
+	printk(KERN_INFO "thrustmaster_enable_full: Ò fatto la richiesta, ottenuta risposta!\n");
 }
 
 char fake_buffer[16] = {0};
@@ -40,7 +40,7 @@ static int wheel_probe(struct usb_interface *interface, const struct usb_device_
 	struct usb_device *device = interface_to_usbdev(interface);
 	struct completion wheel_config_done; init_completion(&wheel_config_done);
 
-	printk(KERN_INFO "Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
+	printk(KERN_INFO "thrustmaster_enable_full: Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
 
 	request_full_func = usb_alloc_urb(0, GFP_KERNEL);
 	if(!request_full_func)
@@ -58,7 +58,8 @@ static int wheel_probe(struct usb_interface *interface, const struct usb_device_
 	);
 
 	error_code = usb_submit_urb(request_full_func, GFP_KERNEL);
-	printk(KERN_INFO "Errore: %d", error_code);
+	if(error_code)
+		printk(KERN_ERR "thrustmaster_enable_full: Errore: %d", error_code);
 
 	if(error_code)
 		goto error;
