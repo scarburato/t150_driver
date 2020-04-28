@@ -1,4 +1,4 @@
-static struct button_mask
+struct button_mask
 {
     uint16_t key;
     uint8_t mask;

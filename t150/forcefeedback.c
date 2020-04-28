@@ -1,14 +1,21 @@
+/** Callback to relase the mutex when a ffb request is completed */
 static void t150_ff_relase_mutex_callback(struct urb *urb) 
 {
 	struct t150 *t150 = urb->context;
 	mutex_unlock(&t150->ff_mutex);
 }
 
-
-static int t150_init_ffb(struct t150 *t150)
+/** 
+ * This macro is called in the probe function when the wheel input
+ * is beign setted up
+ * @param t150 a pointer to our wheel
+ * @returns 0 if no error, less than 0 if an error occured. 
+ */
+static inline int t150_init_ffb(struct t150 *t150)
 {
 	int errno, i;
 
+	// Mem allocs
 	t150->ff_first = kzalloc(sizeof(struct ff_first), GFP_KERNEL);
 	if(!t150->ff_first)
 		goto err0;
@@ -36,6 +43,7 @@ static int t150_init_ffb(struct t150 *t150)
 	if(!t150->ff_change_urbs)
 		goto err5;
 
+	// ffb stuff init
 	mutex_init(&t150->ff_mutex);
 	
 	usb_fill_int_urb(
@@ -95,8 +103,6 @@ static int t150_init_ffb(struct t150 *t150)
 	}
 	printk(KERN_INFO "t150: ff created :)\n");
 
-
-	// may not sleep ?
 	//t150->joystick->ff->set_autocenter = t150_ffb_set_autocenter;
 	t150->joystick->ff->upload = t150_ff_upload;
 	t150->joystick->ff->erase = t150_ff_erase;
@@ -113,7 +119,12 @@ err1:	kzfree(t150->ff_first);
 err0:	return -1;
 }
 
-static void t150_close_ffb(struct t150 *t150)
+/**
+ * macro to clean up the ffb stuff of a whell. It's to be called
+ * when probe failed to init or when the wheel is disconnected
+ * @param t150 a pointer to our wheel
+ */
+static inline void t150_close_ffb(struct t150 *t150)
 {
 	int i;
 
@@ -126,6 +137,16 @@ static void t150_close_ffb(struct t150 *t150)
 	kzfree(t150->ff_first);
 }
 
+/**
+ * Function to be called by when an user wants to an effect to the wheel.
+ * A period effect - at least if it's periodic - has to be sent to the wheel
+ * fragmented in 3 usb request.
+ * @param dev the input_dev
+ * @param effect the effect to upload
+ * @param old no idea :/
+ * 
+ * @return 0 if no errors occured
+ */
 static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struct ff_effect *old)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
@@ -192,6 +213,13 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	return 0;
 }
 
+/**
+ * Function used to erase an effect already uploaded to the Wheel
+ * @param dev 
+ * @param effect_id the ID of the effect to be erased
+ * 
+ * @return 0 if no errors occured
+ */
 static int t150_ff_erase(struct input_dev *dev, int effect_id)
 {
 	//printk(KERN_WARNING "t150: I should destroy %i now...\n", effect_id);
@@ -214,6 +242,17 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 	return errno;
 }
 
+/**
+ * Function used to play an effect already uploaded to the Wheel
+ * If times==0 then the function will return without sending any usb
+ * request to the wheel and without signaling any errors.
+ * @param dev 
+ * @param effect_id the ID of the effect to be played
+ * @param times how many times the effect should be played. If the effect
+ * 	is beign erased a play request in times=0 is also sent.
+ * 
+ * @return 0 if no errors occured
+ */
 static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
@@ -222,7 +261,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	printk(KERN_INFO "t150: I have to reproduce the effect %i for %i time(s)\n",effect_id, times);
 
 	if(times == 0)
-		return;
+		return 0;
 
 	// @TODO Check if the wheel can play infinte times
 	if(times > 0xff)

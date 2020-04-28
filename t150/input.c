@@ -65,7 +65,7 @@ static inline void t150_free_input(struct t150 *t150)
 static int t150_input_open(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
-	int boh, i;
+	int boh;
 	printk(KERN_INFO "t150: opening input!");
 	//mutex_lock(t150->lock);
 
@@ -92,7 +92,7 @@ static int t150_input_open(struct input_dev *dev)
 static void t150_input_close(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
-	int boh, i;
+	int boh;
 
 	printk(KERN_INFO "t150: closing input!");
 	usb_kill_urb(t150->joy_request_in);
