@@ -9,6 +9,9 @@ At the moment the `t150` module has memory leaks in case of errors in the `t150_
 + All axis and buttons of the wheel are reported¹
 + You can set the range of the wheel from 270° to 1080°
 + You can set the return force of the wheel from 0% to 100%
++ Force feedback (partially)
+  * You can set the force feedback scale from 0% to 100%
+  * Periodic effect: `sine`, `saw up` and `saw_down`
 
 ¹: Except for the shifter buttons, because I don't have the PRO version. However, I've guessed the clutch axis.
 
@@ -16,7 +19,7 @@ At the moment the `t150` module has memory leaks in case of errors in the `t150_
 - Reading the settings from the wheel
 - Automatically default setting when the wheel is attached to the machine 
 - This driver is not used by the Kernel when the `hid` module is loaded
-- Force feedback
+- Force feedback (partially)
 - Force feedback settings
 - Firmware upgrades
 
@@ -53,6 +56,7 @@ This table contains a summary of each attribute
 |`ffb_intensity`    |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |
 
 ## How to install and load the driver
+Copy the udev rules into `/etc/udev/rules.d/` and reload the udev rules (or reboot)...
 
 ### Build the drivers
 For a simple build: install all the required tools to compile (like `build-essential`, `linux-headers` etc...) and run
