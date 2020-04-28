@@ -1,7 +1,6 @@
 #define USB_THRUSTMASTER_VENDOR_ID	0x044f
 #define USB_T150_PRODUCT_ID		0xb677
 static const char *no_str = "Non implementato :/ \n";
-/** **/
 
 struct joy_state_packet;
 struct ff_first;
@@ -32,7 +31,8 @@ struct t150
 	struct ff_third *ff_third;
 	struct ff_change_effect_status *ff_change_effect_status;
 
-	struct urb *ff_urbs;
+	struct urb *ff_upload_urbs[3];
+	struct urb *ff_change_urbs;
 
 	/** Used to run the initial wheel setup */
 	struct task_struct *setup_task;
