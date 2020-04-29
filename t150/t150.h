@@ -26,15 +26,7 @@ struct t150
 	uint8_t bInterval_out;
 
 	// packets to be used with ffb
-	struct mutex ff_mutex;
-
-	struct ff_first *ff_first;
-	struct ff_second *ff_second;
-	struct ff_third *ff_third;
-	union ff_change *ff_change;
-
-	struct urb *ff_upload_urbs[3];
-	struct urb *ff_change_urbs;
+	//struct mutex ff_mutex;
 
 	/** Used to run the initial wheel setup */
 	struct task_struct *setup_task;

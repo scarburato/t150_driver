@@ -23,7 +23,9 @@ struct __packed ff_constant
 
 struct __packed ff_first 
 {
-	uint16_t	f0;
+	uint8_t		f0;
+	/** Seems is effect_id * 0x1c + 0x1c */
+	uint8_t		pk_id0;
 	uint8_t		f1;
 	/** Attack length in milliseconds */
 	uint16_t	attack_length;
@@ -39,7 +41,8 @@ struct __packed ff_second
 {
 	/** 0x04 for periodic, 0x03 for const*/
 	uint8_t		effect_class;
-	uint8_t		f0;
+	/** seems is effect_id * 0x1c + 0x0e */
+	uint8_t		pk_id1;
 	uint8_t		f1;
 
 	/** Fields specific to effect class */
@@ -59,8 +62,12 @@ struct __packed ff_third
 	uint16_t	length;
 	/** Do not know how it works */
 	uint16_t	f1;
-	uint16_t	f2;
-	uint16_t	f3;
+	uint8_t		f2;
+	/** seems is effect_id * 0x1c + 0x0e */
+	uint8_t		pk_id1;
+	uint8_t		f3;
+	/** Seems is effect_id * 0x1c + 0x1c */
+	uint8_t		pk_id0;
 	uint8_t		f4;
 	/** Delay in milliseconds */
 	uint8_t		delay;
