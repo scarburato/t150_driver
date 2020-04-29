@@ -153,6 +153,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	struct t150 *t150 = input_get_drvdata(dev);
 	int errno, i;
 	struct ff_periodic_effect *p_effect = &(effect->u.periodic);
+	struct ff_constant_effect *c_effect = &(effect->u.constant);
 
 	printk(KERN_INFO "t150: Uploading effect with id %i...\n", effect->id);
 	errno = mutex_lock_interruptible(&t150->ff_mutex);
@@ -166,17 +167,34 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	t150->ff_first->f0 = cpu_to_le16(0x1c02);
 	t150->ff_first->f1 = 0;
 	t150->ff_first->attack_length = cpu_to_le16(p_effect->envelope.attack_length);
-	t150->ff_first->attack_level  = 0; //p_effect->envelope->attack_level;
+	t150->ff_first->attack_level  = p_effect->envelope.attack_level / 0x1fff;
 	t150->ff_first->fade_length = cpu_to_le16(p_effect->envelope.attack_length);
-	t150->ff_first->fade_level  = 0; //p_effect->envelope->fade_level;
+	t150->ff_first->fade_level  = p_effect->envelope.fade_level / 0x1fff;
 
-	t150->ff_second->f0 = cpu_to_le16(0x0e04);
+	t150->ff_second->f0 = 0x0e;
 	t150->ff_second->f1 = 0x00;
-	t150->ff_second->magnitude = word_high(p_effect->magnitude);
-	t150->ff_second->offset = word_high(p_effect->offset);
-	t150->ff_second->phase = (p_effect->phase * 0xff) / (360*100); // Check if correct
-	t150->ff_second->period = cpu_to_le16(p_effect->period);
 
+	switch (effect->type)
+	{
+	case FF_SINE:
+	case FF_SAW_UP:
+	case FF_SAW_DOWN:
+	default:
+		t150->ff_second->effect_class = 0x04;
+
+		t150->ff_second->effect.periodic.magnitude = word_high(p_effect->magnitude);
+		t150->ff_second->effect.periodic.offset = word_high(p_effect->offset);
+		t150->ff_second->effect.periodic.phase = (p_effect->phase * 0xff) / (360*100); // Check if correct
+		t150->ff_second->effect.periodic.period = cpu_to_le16(p_effect->period);
+		break;
+	case FF_CONSTANT:
+		t150->ff_second->effect_class = 0x03;
+
+		t150->ff_second->effect.constant.level = c_effect->level / 0x01ff;
+		break;
+	}
+
+	
 	t150->ff_third->f0 = 0x01;
 	t150->ff_third->id = effect->id;
 	t150->ff_third->length = cpu_to_le16(effect->replay.length);
@@ -198,6 +216,9 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		break;
 	case FF_SAW_DOWN:
 		t150->ff_third->effect_type = cpu_to_le16(T150_FF_CODE_SAW_DOWN);
+		break;
+	case FF_CONSTANT:
+		t150->ff_third->effect_type = cpu_to_le16(T150_FF_CODE_CONSTANT);
 		break;
 	}
 
@@ -238,6 +259,8 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 	t150->ff_change->effect.id = effect_id;
 	t150->ff_change->effect.mode = 0x00;
 	t150->ff_change->effect.times = 0x01;
+
+	t150->ff_change_urbs->transfer_buffer_length = sizeof(struct ff_change_effect_status);
 
 	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
 	return errno;
@@ -280,6 +303,9 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	t150->ff_change->effect.mode = 0x41;
 	t150->ff_change->effect.times = times;
 
+	t150->ff_change_urbs->transfer_buffer_length = sizeof(struct ff_change_effect_status);
+
+
 	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
 	return errno;
 }
@@ -299,9 +325,11 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 		printk(KERN_ERR "t150: unable to acquire lock, errno %i\n", errno);
 		return errno;
 	}
-
+	
 	t150->ff_change->gain.f0 = 0x43;
 	t150->ff_change->gain.gain = gain / 0x1ff;
+
+	t150->ff_change_urbs->transfer_buffer_length = sizeof(struct ff_change_gain);
 
 	errno = usb_submit_urb(t150->ff_change_urbs, GFP_KERNEL);
 	return errno;
