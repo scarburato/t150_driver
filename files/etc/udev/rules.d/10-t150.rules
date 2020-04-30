@@ -1,0 +1,9 @@
+SYSFS{idVendor}=="044f", SYSFS{idProduct}=="b65d", MODE="0666", PROGRAM="/bin/sh -c 'echo -n $id:1.0 >/sys/bus/usb/drivers/usbhid/unbind;'"
+
+# Rules for t150
+SYSFS{idVendor}=="044f", SYSFS{idProduct}=="b677", MODE="0666", PROGRAM="/bin/sh -c 'echo -n $id:1.0 >/sys/bus/usb/drivers/usbhid/unbind;  echo -n $id:1.0 >/sys/bus/usb/drivers/t150/bind;'"
+ATTR{idProduct}=="b677", ATTR{idVendor}=="044f", MODE="0666", PROGRAM="/bin/sh -c 'echo -n $id:1.0 >/sys/bus/usb/drivers/usbhid/unbind;  echo -n $id:1.0 >/sys/bus/usb/drivers/t150/bind;'"
+ATTRS{product}=="Thrustmaster T150RS", MODE="0666", PROGRAM="/bin/sh -c 'echo -n $id:1.0 >/sys/bus/usb/drivers/usbhid/unbind;  echo -n $id:1.0 >/sys/bus/usb/drivers/t150/bind;'"
+
+# make the t150 appear like an input device
+SUBSYSTEM=="input", ATTRS{name}=="Thrustmaster T150 steering wheel", MODE="0666", ENV{ID_INPUT_JOYSTICK}="1"
