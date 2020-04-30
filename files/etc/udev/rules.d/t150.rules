@@ -1,0 +1,4 @@
+SYSFS{idVendor}=="044f", SYSFS{idProduct}=="b65d", MODE="0666", PROGRAM="/bin/sh -c 'echo -n $id:1.0 >/sys/bus/usb/drivers/usbhid/unbind;'"
+SYSFS{idVendor}=="044f", SYSFS{idProduct}=="b677", MODE="0666", PROGRAM="/bin/sh -c 'echo -n $id:1.0 >/sys/bus/usb/drivers/usbhid/unbind;'"
+
+SUBSYSTEM=="input", ATTRS{name}=="Thrustmaster T150 steering wheel", MODE="0666", ENV{ID_INPUT_JOYSTICK}="1"
