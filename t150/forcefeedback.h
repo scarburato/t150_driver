@@ -21,6 +21,11 @@ struct __packed ff_constant
 	int8_t		level;
 };
 
+/** This is the rappresentation of the packet used to start 
+ * loading a new effect to the wheel.
+ * 
+ * On the Windows's driver is sent before all the others
+ */
 struct __packed ff_first 
 {
 	uint8_t		f0;
@@ -37,7 +42,14 @@ struct __packed ff_first
 	uint8_t		fade_level;
 };
 
-struct __packed ff_second 
+/** This is the rappresentation of the packet used to load the
+ * informations of updatable effects.
+ * 
+ * On the Windows's driver is sent after ff_first and before ff_commit
+ * when uploading a new effect; it's sent alone when uploading an already
+ * existing effect
+ */
+struct __packed ff_update
 {
 	/** 0x04 for periodic, 0x03 for const*/
 	uint8_t		effect_class;
@@ -52,7 +64,14 @@ struct __packed ff_second
 	} effect;
 };
 
-struct __packed ff_third
+/** This is the rappresentation of the packet used to commit a new
+ * effect into the wheel.
+ * The wheel can associate the others packtest to this packet by 
+ * using the pk_id1 and pk_id0 keys
+ * 
+ * On the Windows's driver is sent after ff_first and ff_update
+ */
+struct __packed ff_commit
 {
 	uint8_t		f0;
 	uint8_t		id;

@@ -15,7 +15,6 @@ static void t150_ff_free_urb(struct urb *urb)
 static struct urb* t150_ff_alloc_urb(struct t150 *t150, const size_t buffer_size)
 {
 	struct urb *urb;
-	int errno;
 
 	void *buffer = kzalloc(buffer_size, GFP_KERNEL);
 	if(!buffer)
@@ -86,6 +85,53 @@ static inline void t150_close_ffb(struct t150 *t150)
 }
 
 /**
+ * This function prepares an update packet to update an already uploaded effected
+ * or when we're uploading a new effect
+ * @param t150 our wheel
+ * @param effect the effect to be updated
+ * 
+ * @returns 0 error, urb ptr otherwise
+ */
+static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *effect)
+{
+	struct ff_update *ff_update;
+	struct urb *urb = t150_ff_alloc_urb(t150, sizeof(struct ff_update));
+	int32_t level = 0;
+
+	if(!urb)
+		return 0;
+	ff_update = urb->transfer_buffer;
+
+	ff_update->pk_id1 = effect->id * 0x1c + 0x0e;
+	ff_update->f1 = 0x00;
+
+	switch (effect->type)
+	{
+	case FF_SINE:
+	case FF_SAW_UP:
+	case FF_SAW_DOWN:
+	default:
+		ff_update->effect_class = 0x04;
+
+		ff_update->effect.periodic.magnitude = word_high(effect->u.periodic.magnitude);
+		ff_update->effect.periodic.offset = word_high(effect->u.periodic.offset);
+		ff_update->effect.periodic.phase = (effect->u.periodic.phase * 0xff) / (360*100); // Check if correct
+		ff_update->effect.periodic.period = cpu_to_le16(effect->u.periodic.period);
+		break;
+	case FF_CONSTANT:
+		ff_update->effect_class = 0x03;
+
+		level = effect->u.constant.level * fixp_sin16(effect->direction * 360 / 0xFFFF) * +1;
+		level >>= 15;
+
+		ff_update->effect.constant.level = (level / 0x01ff);
+		break;
+	}
+
+	return urb;	
+}
+
+/**
  * Function to be called by when an user wants to an effect to the wheel.
  * A period effect - at least if it's periodic - has to be sent to the wheel
  * fragmented in 3 usb request.
@@ -94,6 +140,7 @@ static inline void t150_close_ffb(struct t150 *t150)
  * @param old If I have to update an already uploaded effect this is not 0
  * 
  * @return 0 if no errors occured
+ * @TODO refactor
  */
 static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struct ff_effect *old)
 {
@@ -102,35 +149,11 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 
 	struct urb *urbs[3];
 	struct ff_first *ff_first;
-	struct ff_second *ff_second;
-	struct ff_third *ff_third;
+	struct ff_commit *ff_commit;
 
 	struct ff_periodic_effect *p_effect = &(effect->u.periodic);
-	struct ff_constant_effect *c_effect = &(effect->u.constant);
 
 	//printk(KERN_INFO "t150: Uploading effect with id %i...\n", effect->id);
-
-	if(old && effect->type == FF_CONSTANT)
-	{
-		// No change... leave
-		if(c_effect->level == old->u.constant.level)
-		{
-			printk(KERN_INFO "t150: nope %i...\n", effect->id);
-			return 0;
-		}
-
-		urbs[0] = t150_ff_alloc_urb(t150, sizeof(struct ff_second));
-		if(urbs[0])
-			return -ENOMEM;
-		ff_second = urbs[0]->transfer_buffer;
-
-		ff_second->pk_id1 = effect->id * 0x1c + 0x0e;
-		ff_second->f1 = 0x00;
-		ff_second->effect_class = 0x03;
-		ff_second->effect.constant.level = old->u.constant.level / 0x01ff;
-		
-		return usb_submit_urb(urbs[0], GFP_KERNEL);
-	}
 
 	// Alloc first urb
 	urbs[0] = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
@@ -139,23 +162,22 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	ff_first = urbs[0]->transfer_buffer;
 
 	// Alloc second urb
-	urbs[1] = t150_ff_alloc_urb(t150, sizeof(struct ff_second));
+	urbs[1] = t150_ff_prepare_update(t150, effect);
 	if(!urbs[1])
 	{
 		t150_ff_free_urb(urbs[0]);
 		return -ENOMEM;
 	}
-	ff_second = urbs[1]->transfer_buffer;
 
 	// Alloc third urb
-	urbs[2] = t150_ff_alloc_urb(t150, sizeof(struct ff_third));
+	urbs[2] = t150_ff_alloc_urb(t150, sizeof(struct ff_commit));
 	if(!urbs[2])
 	{
 		t150_ff_free_urb(urbs[0]);
 		t150_ff_free_urb(urbs[1]);
 		return -ENOMEM;
 	}
-	ff_third = urbs[2]->transfer_buffer;
+	ff_commit = urbs[2]->transfer_buffer;
 	
 
 	/** Preparing effect */
@@ -166,57 +188,33 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	ff_first->attack_level  = p_effect->envelope.attack_level / 0x1fff;
 	ff_first->fade_length = cpu_to_le16(p_effect->envelope.attack_length);
 	ff_first->fade_level  = p_effect->envelope.fade_level / 0x1fff;
-
-	ff_second->pk_id1 = effect->id * 0x1c + 0x0e;
-	ff_second->f1 = 0x00;
-
-	switch (effect->type)
-	{
-	case FF_SINE:
-	case FF_SAW_UP:
-	case FF_SAW_DOWN:
-	default:
-		ff_second->effect_class = 0x04;
-
-		ff_second->effect.periodic.magnitude = word_high(p_effect->magnitude);
-		ff_second->effect.periodic.offset = word_high(p_effect->offset);
-		ff_second->effect.periodic.phase = (p_effect->phase * 0xff) / (360*100); // Check if correct
-		ff_second->effect.periodic.period = cpu_to_le16(p_effect->period);
-		break;
-	case FF_CONSTANT:
-		ff_second->effect_class = 0x03;
-
-		ff_second->effect.constant.level = c_effect->level / 0x01ff;
-		break;
-	}
-
 	
-	ff_third->f0 = 0x01;
-	ff_third->id = effect->id;
-	ff_third->length = cpu_to_le16(effect->replay.length);
-	ff_third->f1 = 0;
-	ff_third->f2 = 0;
-	ff_third->pk_id1 = effect->id * 0x1c + 0x0e;
-	ff_third->f3 = 0;
-	ff_third->pk_id0 = effect->id * 0x1c + 0x1c;
-	ff_third->f4 = 0;
-	ff_third->delay = word_high(effect->replay.delay);
-	ff_third->f5 = 0;
+	ff_commit->f0 = 0x01;
+	ff_commit->id = effect->id;
+	ff_commit->length = cpu_to_le16(effect->replay.length);
+	ff_commit->f1 = 0;
+	ff_commit->f2 = 0;
+	ff_commit->pk_id1 = effect->id * 0x1c + 0x0e;
+	ff_commit->f3 = 0;
+	ff_commit->pk_id0 = effect->id * 0x1c + 0x1c;
+	ff_commit->f4 = 0;
+	ff_commit->delay = word_high(effect->replay.delay);
+	ff_commit->f5 = 0;
 
 	switch (effect->type)
 	{
 	case FF_SINE:
 	default:
-		ff_third->effect_type = cpu_to_le16(T150_FF_CODE_SINE);
+		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SINE);
 		break;
 	case FF_SAW_UP:
-		ff_third->effect_type = cpu_to_le16(T150_FF_CODE_SAW_UP);
+		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_UP);
 		break;
 	case FF_SAW_DOWN:
-		ff_third->effect_type = cpu_to_le16(T150_FF_CODE_SAW_DOWN);
+		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_DOWN);
 		break;
 	case FF_CONSTANT:
-		ff_third->effect_type = cpu_to_le16(T150_FF_CODE_CONSTANT);
+		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_CONSTANT);
 		break;
 	}
 
