@@ -66,7 +66,7 @@ static int t150_input_open(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh;
-	printk(KERN_INFO "t150: opening input!");
+	printk(KERN_INFO "t150: opening input!\n");
 	//mutex_lock(t150->lock);
 
 	// Send magic codes
@@ -94,7 +94,7 @@ static void t150_input_close(struct input_dev *dev)
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh;
 
-	printk(KERN_INFO "t150: closing input!");
+	printk(KERN_INFO "t150: closing input!\n");
 	usb_kill_urb(t150->joy_request_in);
 
 	// Send magic codes
