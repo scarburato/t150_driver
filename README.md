@@ -10,10 +10,11 @@ At the moment the `t150` module has memory leaks in case of errors in the `t150_
 + You can set the range of the wheel from 270° to 1080°
 + You can set the return force of the wheel from 0% to 100%
 + Force feedback (partially)
-  * You can set the force feedback scale from 0% to 100%
-  * Gain
-  * Periodic effects: `FF_SINE`, `FF_SAW_UP` and `FF_SAW_DOWN`
-  * Constant effects: `FF_CONSTANT`
+  * You can set the global force feedback scale from 0% to 100%
+  * Settable gain `FF_GAIN`
+  * Periodic effects:  `FF_SINE`, `FF_SAW_UP` and `FF_SAW_DOWN`
+  * Constant effects:  `FF_CONSTANT`
+  * Condition effects: `FF_SPRING`
 
 ¹: Except for the shifter buttons, because I don't have the PRO version. However, I've guessed the clutch axis.
 
