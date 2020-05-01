@@ -1,7 +1,16 @@
-#define T150_FF_CODE_CONSTANT		0x4000
-#define T150_FF_CODE_SINE		0x4022
-#define T150_FF_CODE_SAW_UP		0x4023
-#define T150_FF_CODE_SAW_DOWN		0x4024
+#define T150_FF_FIRST_CODE_CONSTANT		0x02
+#define T150_FF_FIRST_CODE_PERIODIC		0x02
+#define T150_FF_FIRST_CODE_SPRING		0x02
+
+#define T150_FF_UPDATE_CODE_CONSTANT		0x03
+#define T150_FF_UPDATE_CODE_PERIODIC		0x04
+#define T150_FF_UPDATE_CODE_SPRING		0x05
+
+#define T150_FF_COMMIT_CODE_CONSTANT		0x4000
+#define T150_FF_COMMIT_CODE_SINE		0x4022
+#define T150_FF_COMMIT_CODE_SAW_UP		0x4023
+#define T150_FF_COMMIT_CODE_SAW_DOWN		0x4024
+#define T150_FF_COMMIT_CODE_SPRING		0x4040
 
 struct __packed ff_periodic
 {
@@ -19,6 +28,23 @@ struct __packed ff_constant
 {
 	/** the level of the effect  */
 	int8_t		level;
+};
+
+struct __packed ff_condition
+{
+	/** between [-100, +100] = [0x9c, 0x64] */
+	int8_t		right_coeff;
+	/** between [-100, +100] = [0x9c, 0x64] */
+	int8_t		left_coeff;
+	/** between [-500, +500] = [0xfe0c, 0x01f4] */
+	int16_t		center;
+	/** between [0, +1000] = [0x0000, 0x03e8] */
+	int16_t		deadband;
+	/** seems to be always 0x54**/
+	uint8_t		f0;
+	/** seems to be always 0x54**/
+	uint8_t		f1;
+
 };
 
 /** This is the rappresentation of the packet used to start 
@@ -40,6 +66,10 @@ struct __packed ff_first
 	uint16_t	fade_length;
 	/** Do not know how it works */
 	uint8_t		fade_level;
+	/** Always 0x46 */
+	uint8_t		f2;
+	/** Always 0x54 */
+	uint8_t		f3;
 };
 
 /** This is the rappresentation of the packet used to load the
@@ -61,6 +91,7 @@ struct __packed ff_update
 	union {
 		struct ff_periodic periodic;
 		struct ff_constant constant;
+		struct ff_condition condition;
 	} effect;
 };
 
@@ -121,7 +152,7 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id);
 static int t150_ff_play(struct input_dev *dev, int effect_id, int value);
 static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain);
 
-static uint8_t t150_ffb_effects_length = 6;
+static uint8_t t150_ffb_effects_length = 7;
 static const int16_t t150_ffb_effects[] = {
 	FF_GAIN,
 
@@ -130,5 +161,7 @@ static const int16_t t150_ffb_effects[] = {
 	FF_SAW_UP,
 	FF_SAW_DOWN,
 
-	FF_CONSTANT
+	FF_CONSTANT,
+
+	FF_SPRING
 };

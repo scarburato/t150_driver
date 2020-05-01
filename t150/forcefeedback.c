@@ -119,19 +119,20 @@ static inline struct urb* t150_ff_prepare_first(struct t150 *t150, struct ff_eff
 			(effect->type == FF_PERIODIC)	? &effect->u.periodic.envelope :
 			(effect->type == FF_RAMP)	? &effect->u.ramp.envelope :
 							  0;
-	if(!ff_envelope)
-	{
-		printk(KERN_ERR "t150: Can't find envelope of effect type %i\n", effect->type);
-		t150_ff_free_urb(urb);
-		return 0;
-	}
 
 	ff_first = urb->transfer_buffer;
 
 	/** Preparing effect */
-	ff_first->f0 = 0x02;
+	ff_first->f0 = effect->type == FF_RAMP ? 0x05 : 0x02; // @TODO use macro
 	ff_first->pk_id0 = effect->id * 0x1c + 0x1c;
 	ff_first->f1 = 0;
+	ff_first->f2 = 0x46;
+	ff_first->f3 = 0x54;
+
+	/* Some effects do not use those fields */
+	if(!ff_envelope)
+		return urb;
+
 	ff_first->attack_length = cpu_to_le16(ff_envelope->attack_length);
 	ff_first->attack_level  = ff_envelope->attack_level / 0x1fff;
 	ff_first->fade_length = cpu_to_le16(ff_envelope->attack_length);
@@ -163,11 +164,9 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 
 	switch (effect->type)
 	{
-	case FF_SINE:
-	case FF_SAW_UP:
-	case FF_SAW_DOWN:
+	case FF_PERIODIC:
 	default:
-		ff_update->effect_class = 0x04;
+		ff_update->effect_class = T150_FF_UPDATE_CODE_PERIODIC;
 
 		ff_update->effect.periodic.magnitude = word_high(effect->u.periodic.magnitude);
 		ff_update->effect.periodic.offset = word_high(effect->u.periodic.offset);
@@ -175,13 +174,31 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 		ff_update->effect.periodic.period = cpu_to_le16(effect->u.periodic.period);
 		break;
 	case FF_CONSTANT:
-		ff_update->effect_class = 0x03;
+		ff_update->effect_class = T150_FF_UPDATE_CODE_CONSTANT;
 
+		/* Not sure if really necessary. Done only for the ffmvforce utility :P */
 		level = effect->u.constant.level * fixp_sin16(effect->direction * 360 / 0xFFFF) * +1;
 		level >>= 15;
 
 		ff_update->effect.constant.level = (level / 0x01ff);
 		break;
+	case FF_SPRING:
+		ff_update->effect_class = T150_FF_UPDATE_CODE_SPRING;
+
+		ff_update->effect.condition.right_coeff = effect->u.condition[0].right_coeff / 0x147;
+		ff_update->effect.condition.left_coeff = effect->u.condition[0].left_coeff / 0x147;
+
+		ff_update->effect.condition.center = cpu_to_le16(
+			effect->u.condition[0].center * 0x01f4 / 0x7fff
+		);
+		ff_update->effect.condition.deadband = cpu_to_le16(
+			effect->u.condition[0].deadband * 0x03e8 / 0xffff
+		);
+
+		ff_update->effect.condition.f0 = 0x54;
+		ff_update->effect.condition.f1 = 0x54;
+		break;
+
 	}
 
 	return urb;	
@@ -222,18 +239,21 @@ static inline struct urb* t150_ff_prepare_commit(struct t150 *t150, struct ff_ef
 		{
 		case FF_SINE:
 		default:
-			ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SINE);
+			ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_SINE);
 			break;
 		case FF_SAW_UP:
-			ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_UP);
+			ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_SAW_UP);
 			break;
 		case FF_SAW_DOWN:
-			ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_DOWN);
+			ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_SAW_DOWN);
 			break;
 		}
 		break;
 	case FF_CONSTANT:
-		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_CONSTANT);
+		ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_CONSTANT);
+		break;
+	case FF_SPRING:
+		ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_SPRING);
 		break;
 	default:
 		printk(KERN_ERR "t150: unknown effect type: %i\n", effect->type);
