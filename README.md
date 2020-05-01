@@ -11,14 +11,15 @@ At the moment the `t150` module has memory leaks in case of errors in the `t150_
 + You can set the return force of the wheel from 0% to 100%
 + Force feedback (partially)
   * You can set the force feedback scale from 0% to 100%
-  * Periodic effect: `sine`, `saw up` and `saw_down`
+  * Gain
+  * Periodic effects: `FF_SINE`, `FF_SAW_UP` and `FF_SAW_DOWN`
+  * Constant effects: `FF_CONSTANT`
 
 ¹: Except for the shifter buttons, because I don't have the PRO version. However, I've guessed the clutch axis.
 
 ### What is missing 🚧
 - Reading the settings from the wheel
 - Automatically default setting when the wheel is attached to the machine 
-- This driver is not used by the Kernel when the `hid` module is loaded
 - Force feedback (partially)
 - Force feedback settings
 - Firmware upgrades
