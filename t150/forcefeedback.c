@@ -85,6 +85,62 @@ static inline void t150_close_ffb(struct t150 *t150)
 }
 
 /**
+ * Considering *only* the fields sended by ff_update, checks if two ff_effect 
+ * are equal
+ * @param a first effect
+ * @param b second effect
+ * @returns true if they're equal false otherwhise
+ */
+static bool t150_ff_effect_operator_eq(struct ff_effect const *const a, struct ff_effect const *const b)
+{
+	if(a->type != b->type || a->id != b->id)
+		return 0;
+	
+	if(a->type == FF_CONSTANT)
+	{
+		if(a->u.constant.level == b->u.constant.level)
+			return 1;
+	}
+	
+	return 0;
+}
+
+static inline struct urb* t150_ff_prepare_first(struct t150 *t150, struct ff_effect *effect)
+{
+	struct ff_first *ff_first;
+	struct urb *urb = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
+	struct ff_envelope *ff_envelope;
+
+	if(!urb)
+		return 0;
+
+	/** Finding envelope in the union */
+	ff_envelope =	(effect->type == FF_CONSTANT)	? &effect->u.constant.envelope :
+			(effect->type == FF_PERIODIC)	? &effect->u.periodic.envelope :
+			(effect->type == FF_RAMP)	? &effect->u.ramp.envelope :
+							  0;
+	if(!ff_envelope)
+	{
+		printk(KERN_ERR "t150: Can't find envelope of effect type %i\n", effect->type);
+		t150_ff_free_urb(urb);
+		return 0;
+	}
+
+	ff_first = urb->transfer_buffer;
+
+	/** Preparing effect */
+	ff_first->f0 = 0x02;
+	ff_first->pk_id0 = effect->id * 0x1c + 0x1c;
+	ff_first->f1 = 0;
+	ff_first->attack_length = cpu_to_le16(ff_envelope->attack_length);
+	ff_first->attack_level  = ff_envelope->attack_level / 0x1fff;
+	ff_first->fade_length = cpu_to_le16(ff_envelope->attack_length);
+	ff_first->fade_level  = ff_envelope->fade_level / 0x1fff;
+
+	return urb;
+}
+
+/**
  * This function prepares an update packet to update an already uploaded effected
  * or when we're uploading a new effect
  * @param t150 our wheel
@@ -132,6 +188,61 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 }
 
 /**
+ * This function prepares a commit packet to finish the upload of an effect
+ * @param t150 our wheel
+ * @param effect the effect to be updated
+ * 
+ * @returns 0 error, urb ptr otherwise
+ */
+static inline struct urb* t150_ff_prepare_commit(struct t150 *t150, struct ff_effect *effect)
+{
+	struct ff_commit *ff_commit;
+	struct urb *urb = t150_ff_alloc_urb(t150, sizeof(struct ff_commit));
+
+	if(!urb)
+		return 0;
+	ff_commit = urb->transfer_buffer;
+
+	ff_commit->f0 = 0x01;
+	ff_commit->id = effect->id;
+	ff_commit->length = cpu_to_le16(effect->replay.length);
+	ff_commit->f1 = 0;
+	ff_commit->f2 = 0;
+	ff_commit->pk_id1 = effect->id * 0x1c + 0x0e;
+	ff_commit->f3 = 0;
+	ff_commit->pk_id0 = effect->id * 0x1c + 0x1c;
+	ff_commit->f4 = 0;
+	ff_commit->delay = word_high(effect->replay.delay);
+	ff_commit->f5 = 0;
+
+	switch (effect->type)
+	{
+	case FF_PERIODIC:
+		switch (effect->u.periodic.waveform)
+		{
+		case FF_SINE:
+		default:
+			ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SINE);
+			break;
+		case FF_SAW_UP:
+			ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_UP);
+			break;
+		case FF_SAW_DOWN:
+			ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_DOWN);
+			break;
+		}
+		break;
+	case FF_CONSTANT:
+		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_CONSTANT);
+		break;
+	default:
+		printk(KERN_ERR "t150: unknown effect type: %i\n", effect->type);
+	}
+
+	return urb;
+}
+
+/**
  * Function to be called by when an user wants to an effect to the wheel.
  * A period effect - at least if it's periodic - has to be sent to the wheel
  * fragmented in 3 usb request.
@@ -148,18 +259,21 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	int errno, i;
 
 	struct urb *urbs[3];
-	struct ff_first *ff_first;
-	struct ff_commit *ff_commit;
-
-	struct ff_periodic_effect *p_effect = &(effect->u.periodic);
-
 	//printk(KERN_INFO "t150: Uploading effect with id %i...\n", effect->id);
+	
+	/* Update only */
+	if(old && !t150_ff_effect_operator_eq(effect, old))
+	{
+		urbs[1] = t150_ff_prepare_update(t150, effect);
+		if(!urbs[1])
+			return -ENOMEM;
+		return usb_submit_urb(urbs[1], GFP_ATOMIC);
+	}
 
 	// Alloc first urb
-	urbs[0] = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
+	urbs[0] = t150_ff_prepare_first(t150, effect);
 	if(!urbs[0])
 		return -ENOMEM;
-	ff_first = urbs[0]->transfer_buffer;
 
 	// Alloc second urb
 	urbs[1] = t150_ff_prepare_update(t150, effect);
@@ -170,52 +284,12 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	}
 
 	// Alloc third urb
-	urbs[2] = t150_ff_alloc_urb(t150, sizeof(struct ff_commit));
+	urbs[2] = t150_ff_prepare_commit(t150, effect);
 	if(!urbs[2])
 	{
 		t150_ff_free_urb(urbs[0]);
 		t150_ff_free_urb(urbs[1]);
 		return -ENOMEM;
-	}
-	ff_commit = urbs[2]->transfer_buffer;
-	
-
-	/** Preparing effect */
-	ff_first->f0 = 0x02;
-	ff_first->pk_id0 = effect->id * 0x1c + 0x1c;
-	ff_first->f1 = 0;
-	ff_first->attack_length = cpu_to_le16(p_effect->envelope.attack_length);
-	ff_first->attack_level  = p_effect->envelope.attack_level / 0x1fff;
-	ff_first->fade_length = cpu_to_le16(p_effect->envelope.attack_length);
-	ff_first->fade_level  = p_effect->envelope.fade_level / 0x1fff;
-	
-	ff_commit->f0 = 0x01;
-	ff_commit->id = effect->id;
-	ff_commit->length = cpu_to_le16(effect->replay.length);
-	ff_commit->f1 = 0;
-	ff_commit->f2 = 0;
-	ff_commit->pk_id1 = effect->id * 0x1c + 0x0e;
-	ff_commit->f3 = 0;
-	ff_commit->pk_id0 = effect->id * 0x1c + 0x1c;
-	ff_commit->f4 = 0;
-	ff_commit->delay = word_high(effect->replay.delay);
-	ff_commit->f5 = 0;
-
-	switch (effect->type)
-	{
-	case FF_SINE:
-	default:
-		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SINE);
-		break;
-	case FF_SAW_UP:
-		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_UP);
-		break;
-	case FF_SAW_DOWN:
-		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_SAW_DOWN);
-		break;
-	case FF_CONSTANT:
-		ff_commit->effect_type = cpu_to_le16(T150_FF_CODE_CONSTANT);
-		break;
 	}
 
 	/** Submiting the effect to the wheel */
