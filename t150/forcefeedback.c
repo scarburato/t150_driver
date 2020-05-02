@@ -128,14 +128,14 @@ static inline struct urb* t150_ff_prepare_first(struct t150 *t150, struct ff_eff
 		break;
 	case FF_DAMPER:
 	case FF_SPRING:
-		ff_envelope = &effect->u.ramp.envelope;
+		ff_envelope = &effect->u.condition.envelope;
 		ff_first->f0 = T150_FF_FIRST_CODE_CONDITION;
 		break;
 	default:
 		ff_envelope = 0;
 		break;
 	}
-	
+
 	ff_first->pk_id0 = effect->id * 0x1c + 0x1c;
 	ff_first->f1 = 0;
 	ff_first->f2 = 0x46;
