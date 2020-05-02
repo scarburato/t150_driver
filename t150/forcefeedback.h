@@ -1,16 +1,18 @@
 #define T150_FF_FIRST_CODE_CONSTANT		0x02
 #define T150_FF_FIRST_CODE_PERIODIC		0x02
-#define T150_FF_FIRST_CODE_SPRING		0x02
+#define T150_FF_FIRST_CODE_CONDITION		0x05
 
 #define T150_FF_UPDATE_CODE_CONSTANT		0x03
 #define T150_FF_UPDATE_CODE_PERIODIC		0x04
-#define T150_FF_UPDATE_CODE_SPRING		0x05
+#define T150_FF_UPDATE_CODE_CONDITION		0x05
 
 #define T150_FF_COMMIT_CODE_CONSTANT		0x4000
 #define T150_FF_COMMIT_CODE_SINE		0x4022
 #define T150_FF_COMMIT_CODE_SAW_UP		0x4023
 #define T150_FF_COMMIT_CODE_SAW_DOWN		0x4024
 #define T150_FF_COMMIT_CODE_SPRING		0x4040
+#define T150_FF_COMMIT_CODE_DAMPER		0x4041
+
 
 struct __packed ff_periodic
 {
@@ -40,9 +42,9 @@ struct __packed ff_condition
 	int16_t		center;
 	/** between [0, +1000] = [0x0000, 0x03e8] */
 	int16_t		deadband;
-	/** between [0x00, 0x54] */
+	/** between if spring [0x00, 0x54]; if damper [0x00, 0x64] */
 	uint8_t		right_sat;
-	/** between [0x00, 0x54] **/
+	/** between if spring [0x00, 0x54]; if damper [0x00, 0x64] **/
 	uint8_t		left_sat;
 
 };
@@ -152,7 +154,7 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id);
 static int t150_ff_play(struct input_dev *dev, int effect_id, int value);
 static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain);
 
-static uint8_t t150_ffb_effects_length = 7;
+static uint8_t t150_ffb_effects_length = 8;
 static const int16_t t150_ffb_effects[] = {
 	FF_GAIN,
 
@@ -163,5 +165,6 @@ static const int16_t t150_ffb_effects[] = {
 
 	FF_CONSTANT,
 
-	FF_SPRING
+	FF_SPRING,
+	FF_DAMPER
 };

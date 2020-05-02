@@ -103,7 +103,7 @@ static void t150_input_close(struct input_dev *dev)
 			t150->usb_device,
 			t150->pipe_out,
 			packet_input_what, 2, &boh,
-			1000
+			8
 		);
 
 	usb_interrupt_msg(

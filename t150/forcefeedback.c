@@ -114,16 +114,28 @@ static inline struct urb* t150_ff_prepare_first(struct t150 *t150, struct ff_eff
 	if(!urb)
 		return 0;
 
-	/** Finding envelope in the union */
-	ff_envelope =	(effect->type == FF_CONSTANT)	? &effect->u.constant.envelope :
-			(effect->type == FF_PERIODIC)	? &effect->u.periodic.envelope :
-			(effect->type == FF_RAMP)	? &effect->u.ramp.envelope :
-							  0;
-
 	ff_first = urb->transfer_buffer;
-
-	/** Preparing effect */
-	ff_first->f0 = effect->type == FF_RAMP ? 0x05 : 0x02; // @TODO use macro
+	/** Finding envelope in the union and set type */
+	switch (effect->type)
+	{
+	case FF_CONSTANT:
+		ff_envelope = &effect->u.constant.envelope;
+		ff_first->f0 = T150_FF_FIRST_CODE_CONSTANT;
+		break;
+	case FF_PERIODIC:
+		ff_envelope = &effect->u.periodic.envelope;
+		ff_first->f0 = T150_FF_FIRST_CODE_PERIODIC;
+		break;
+	case FF_DAMPER:
+	case FF_SPRING:
+		ff_envelope = &effect->u.ramp.envelope;
+		ff_first->f0 = T150_FF_FIRST_CODE_CONDITION;
+		break;
+	default:
+		ff_envelope = 0;
+		break;
+	}
+	
 	ff_first->pk_id0 = effect->id * 0x1c + 0x1c;
 	ff_first->f1 = 0;
 	ff_first->f2 = 0x46;
@@ -183,7 +195,7 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 		ff_update->effect.constant.level = (level / 0x01ff);
 		break;
 	case FF_SPRING:
-		ff_update->effect_class = T150_FF_UPDATE_CODE_SPRING;
+		ff_update->effect_class = T150_FF_UPDATE_CODE_CONDITION;
 
 		ff_update->effect.condition.right_coeff = effect->u.condition[0].right_coeff / 0x147;
 		ff_update->effect.condition.left_coeff = effect->u.condition[0].left_coeff / 0x147;
@@ -197,6 +209,22 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 
 		ff_update->effect.condition.right_sat = effect->u.condition[0].right_saturation / 0x030c;
 		ff_update->effect.condition.left_sat = effect->u.condition[0].left_saturation / 0x030c;
+		break;
+	case FF_DAMPER:
+		ff_update->effect_class = T150_FF_UPDATE_CODE_CONDITION;
+
+		ff_update->effect.condition.right_coeff = effect->u.condition[0].right_coeff / 0x147;
+		ff_update->effect.condition.left_coeff = effect->u.condition[0].left_coeff / 0x147;
+
+		ff_update->effect.condition.center = cpu_to_le16(
+			effect->u.condition[0].center / (0x7fff / 0x01f4) 
+		);
+		ff_update->effect.condition.deadband = cpu_to_le16(
+			effect->u.condition[0].deadband / (0xffff /0x03e8)
+		);
+
+		ff_update->effect.condition.right_sat = effect->u.condition[0].right_saturation / 0x028f;
+		ff_update->effect.condition.left_sat = effect->u.condition[0].left_saturation / 0x028f;
 
 		break;
 
@@ -255,6 +283,10 @@ static inline struct urb* t150_ff_prepare_commit(struct t150 *t150, struct ff_ef
 		break;
 	case FF_SPRING:
 		ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_SPRING);
+		break;
+	case FF_DAMPER:
+		ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_DAMPER);
+
 		break;
 	default:
 		printk(KERN_ERR "t150: unknown effect type: %i\n", effect->type);
