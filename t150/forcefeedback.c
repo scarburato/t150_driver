@@ -170,14 +170,14 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 
 		ff_update->effect.periodic.magnitude = word_high(effect->u.periodic.magnitude);
 		ff_update->effect.periodic.offset = word_high(effect->u.periodic.offset);
-		ff_update->effect.periodic.phase = (effect->u.periodic.phase * 0xff) / (360*100); // Check if correct
+		ff_update->effect.periodic.phase = effect->u.periodic.phase / ( (360*100) / 0xff) ; // Check if correct
 		ff_update->effect.periodic.period = cpu_to_le16(effect->u.periodic.period);
 		break;
 	case FF_CONSTANT:
 		ff_update->effect_class = T150_FF_UPDATE_CODE_CONSTANT;
 
 		/* Not sure if really necessary. Done only for the ffmvforce utility :P */
-		level = effect->u.constant.level * fixp_sin16(effect->direction * 360 / 0xFFFF) * +1;
+		level = effect->u.constant.level * fixp_sin16(effect->direction / ( 0xFFFF / 360 )) * +1;
 		level >>= 15;
 
 		ff_update->effect.constant.level = (level / 0x01ff);
@@ -189,14 +189,15 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 		ff_update->effect.condition.left_coeff = effect->u.condition[0].left_coeff / 0x147;
 
 		ff_update->effect.condition.center = cpu_to_le16(
-			effect->u.condition[0].center * 0x01f4 / 0x7fff
+			effect->u.condition[0].center / (0x7fff / 0x01f4) 
 		);
 		ff_update->effect.condition.deadband = cpu_to_le16(
-			effect->u.condition[0].deadband * 0x03e8 / 0xffff
+			effect->u.condition[0].deadband / (0xffff /0x03e8)
 		);
 
-		ff_update->effect.condition.f0 = 0x54;
-		ff_update->effect.condition.f1 = 0x54;
+		ff_update->effect.condition.right_sat = effect->u.condition[0].right_saturation / 0x030c;
+		ff_update->effect.condition.left_sat = effect->u.condition[0].left_saturation / 0x030c;
+
 		break;
 
 	}

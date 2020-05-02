@@ -40,10 +40,10 @@ struct __packed ff_condition
 	int16_t		center;
 	/** between [0, +1000] = [0x0000, 0x03e8] */
 	int16_t		deadband;
-	/** seems to be always 0x54**/
-	uint8_t		f0;
-	/** seems to be always 0x54**/
-	uint8_t		f1;
+	/** between [0x00, 0x54] */
+	uint8_t		right_sat;
+	/** between [0x00, 0x54] **/
+	uint8_t		left_sat;
 
 };
 
@@ -66,9 +66,9 @@ struct __packed ff_first
 	uint16_t	fade_length;
 	/** Do not know how it works */
 	uint8_t		fade_level;
-	/** Always 0x46 */
+	/** Always 0x46 ? */
 	uint8_t		f2;
-	/** Always 0x54 */
+	/** Always 0x54 ?*/
 	uint8_t		f3;
 };
 
