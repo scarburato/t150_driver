@@ -12,6 +12,7 @@ static void t150_update_input(struct urb *urb);
 
 static char const *const nameWH = "Thrustmaster T150 steering wheel";
 static uint16_t *packet_input_open = 0;
+/** It seems it's used to purge all uploaded effects from the wheel, not sure */
 static uint16_t *packet_input_what = 0;
 static uint16_t *packet_input_close = 0; 
 
