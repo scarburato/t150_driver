@@ -96,6 +96,9 @@ static bool t150_ff_effect_operator_eq(struct ff_effect const *const a, struct f
 	if(a->type != b->type || a->id != b->id)
 		return 0;
 	
+	// @todo remove me
+	return 0;
+	
 	if(a->type == FF_CONSTANT)
 	{
 		if(a->u.constant.level == b->u.constant.level)
@@ -128,7 +131,7 @@ static inline struct urb* t150_ff_prepare_first(struct t150 *t150, struct ff_eff
 		break;
 	case FF_DAMPER:
 	case FF_SPRING:
-		ff_envelope = &effect->u.condition.envelope;
+		ff_envelope = 0;
 		ff_first->f0 = T150_FF_FIRST_CODE_CONDITION;
 		break;
 	default:
@@ -315,13 +318,13 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	//printk(KERN_INFO "t150: Uploading effect with id %i...\n", effect->id);
 	
 	/* Update only */
-	if(old && !t150_ff_effect_operator_eq(effect, old))
-	{
-		urbs[1] = t150_ff_prepare_update(t150, effect);
-		if(!urbs[1])
-			return -ENOMEM;
-		return usb_submit_urb(urbs[1], GFP_ATOMIC);
-	}
+	//if(old && !t150_ff_effect_operator_eq(effect, old))
+	//{
+	//	urbs[1] = t150_ff_prepare_update(t150, effect);
+	//	if(!urbs[1])
+	//		return -ENOMEM;
+	//	return usb_submit_urb(urbs[1], GFP_ATOMIC);
+	//}
 
 	// Alloc first urb
 	urbs[0] = t150_ff_prepare_first(t150, effect);
@@ -374,8 +377,15 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 
 	printk(KERN_WARNING "t150: I should destroy %i now...\n", effect_id);
 
+	/** When an effect is destroyed also a request to stop it is sent to 
+	 * t150_ff_play. Observing the Windows's driver seems there isn't any
+	 * specific packet to explicity destory the effect, so we return success (0)
+	 * to notify the Kernel that the id can be freed and re-used for another
+	 * effect. 
+	 */
+	return 0;
 	// Alloc urb
-	urb = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
+	/*urb = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
 	if(!urb)
 		return -ENOMEM;
 	ff_change = urb->transfer_buffer;
@@ -391,13 +401,13 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 		printk(KERN_ERR "t150: unable to send URB, errno %i\n", errno);
 	}
 
-	return errno;
+	return errno;*/
 }
 
 /**
  * Function used to play an effect already uploaded to the Wheel
- * If times==0 then the function will return without sending any usb
- * request to the wheel and without signaling any errors.
+ * If times==0 then the function will send to the wheel a request
+ * to stop playing the effect.
  * @param dev 
  * @param effect_id the ID of the effect to be played
  * @param times how many times the effect should be played. If the effect
@@ -423,8 +433,8 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 
 	ff_change->f0 = 0x41;
 	ff_change->id = effect_id;
-	ff_change->mode = 0x41;
-	ff_change->times = times;
+	ff_change->mode = times ? 0x41 : 0x00; // Play or stop ?
+	ff_change->times = times ? times : 0x01;
 
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
