@@ -149,6 +149,7 @@ static inline struct urb* t150_ff_prepare_first(struct t150 *t150, struct ff_eff
 		return urb;
 
 	ff_first->attack_length = cpu_to_le16(ff_envelope->attack_length);
+	// @FIXME the attack and fade levels are wrong !
 	ff_first->attack_level  = ff_envelope->attack_level / 0x1fff;
 	ff_first->fade_length = cpu_to_le16(ff_envelope->attack_length);
 	ff_first->fade_level  = ff_envelope->fade_level / 0x1fff;
@@ -193,7 +194,7 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 
 		/* Not sure if really necessary. Done only for the ffmvforce utility :P */
 		level = effect->u.constant.level * fixp_sin16(effect->direction / ( 0xFFFF / 360 )) * +1;
-		level >>= 15;
+		level >>= 15; // int only
 
 		ff_update->effect.constant.level = (level / 0x01ff);
 		break;
