@@ -9,15 +9,16 @@ fi
 VERSION=0.5
 
 echo "==== INSTALLING UDEV RULES ===="
-cp -R ./files /
+cp -R ./files/* /
 
 echo "==== CONFIG DKMS ===="
-mkdir /usr/src/t150
+mkdir "/usr/src/t150-$VERSION"
 mkdir /usr/src/build
 
-cp -R ./t150 /usr/src/t150-0.5/t150
-cp -R ./thrustmaster_enable_full /usr/src/t150-0.5/thrustmaster_enable_full
-cp ./Makefile /usr/src/t150-0.5/t150
+cp -R ./t150 "/usr/src/t150-$VERSION/t150"
+cp -R ./thrustmaster_enable_full "/usr/src/t150-$VERSION/thrustmaster_enable_full"
+cp ./Makefile "/usr/src/t150-$VERSION/"
+cp ./dkms.conf "/usr/src/t150-$VERSION/"
 
 echo "==== DKMS ===="
 dkms add -m t150 -v $VERSION
