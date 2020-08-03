@@ -14,7 +14,6 @@ static inline void t150_free_attributes(struct t150 *t150, struct usb_interface 
 	device_remove_file(&uif->dev, &dev_attr_use_return_force);
 	device_remove_file(&uif->dev, &dev_attr_range);
 	device_remove_file(&uif->dev, &dev_attr_ffb_intensity);
-
 }
 
 /**/

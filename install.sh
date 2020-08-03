@@ -9,7 +9,7 @@ fi
 VERSION=0.5
 
 echo "==== INSTALLING UDEV RULES ===="
-cp -R ./files/* /
+cp -vR ./files/* /
 
 echo "==== CONFIG DKMS ===="
 mkdir "/usr/src/t150-$VERSION"
