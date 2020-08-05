@@ -136,13 +136,13 @@ static void t150_update_input(struct urb *urb)
 
 	// Reporting axies
 	input_report_abs(t150->joystick, ABS_GAS,
-		le16_to_cpu(ss->gas_axis));
+		0x3ff - le16_to_cpu(ss->gas_axis));
 
 	input_report_abs(t150->joystick, ABS_BRAKE,
-		le16_to_cpu(ss->brake_axis));
+		0x3ff - le16_to_cpu(ss->brake_axis));
 
 	input_report_abs(t150->joystick, ABS_Z,
-		le16_to_cpu(ss->clutch_axis));
+		0x3ff - le16_to_cpu(ss->clutch_axis));
 
 	input_report_abs(t150->joystick, ABS_WHEEL,
 		(int16_t)
