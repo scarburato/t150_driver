@@ -1,9 +1,0 @@
-T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#= 36 Spd=12   MxCh= 0
-D:  Ver= 1.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-P:  Vendor=044f ProdID=b65d Rev= 1.00
-S:  Manufacturer=Thrustmaster
-S:  Product=Thrustmaster FFB Wheel
-C:* #Ifs= 1 Cfg#= 1 Atr=80 MxPwr=200mA
-I:* If#= 0 Alt= 0 #EPs= 2 Cls=03(HID  ) Sub=00 Prot=00 Driver=usbhid
-E:  Ad=82(I) Atr=03(Int.) MxPS=  32 Ivl=2ms
-E:  Ad=01(O) Atr=03(Int.) MxPS=  32 Ivl=4ms

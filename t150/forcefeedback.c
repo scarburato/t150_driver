@@ -79,7 +79,7 @@ static inline int t150_init_ffb(struct t150 *t150)
  * when probe failed to init or when the wheel is disconnected
  * @param t150 a pointer to our wheel
  */
-static inline void t150_close_ffb(struct t150 *t150)
+static inline void t150_free_ffb(struct t150 *t150)
 {
 	;
 }
@@ -321,7 +321,8 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 
 	urb = t150_ff_alloc_urb(t150, sizeof(struct ff_change_gain));
 	if(!urb)
-		return -ENOMEM;
+		return; // -NOMEM
+
 	ff_change = urb->transfer_buffer;
 	
 	ff_change->f0 = 0x43;
@@ -333,5 +334,5 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 		printk(KERN_ERR "t150: unable to send URB, errno %i\n", errno);
 	}
 	
-	return errno;
+	//return errno;
 }

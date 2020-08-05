@@ -114,7 +114,7 @@ union __packed ff_change
 };
 
 static int t150_init_ffb(struct t150 *t150);
-static void t150_close_ffb(struct t150 *t150);
+static void t150_free_ffb(struct t150 *t150);
 
 static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struct ff_effect *old);
 static int t150_ff_erase(struct input_dev *dev, int effect_id);

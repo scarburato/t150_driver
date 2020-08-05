@@ -65,7 +65,7 @@ static inline void t150_free_input(struct t150 *t150)
 static int t150_input_open(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
-	int boh;
+	int boh, ret;
 	printk(KERN_INFO "t150: opening input!\n");
 	//mutex_lock(t150->lock);
 
@@ -78,15 +78,21 @@ static int t150_input_open(struct input_dev *dev)
 			1000
 		);*/
 
-	usb_interrupt_msg(
+	ret = usb_interrupt_msg(
 		t150->usb_device,
 		t150->pipe_out,
 		packet_input_open, 2, &boh,
 		8
 	);
 
-	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
-	return 0;
+	if(ret)
+		return ret;
+
+	ret = usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
+	if(ret)
+		t150_input_close(dev);
+
+	return ret;
 }
 
 static void t150_input_close(struct input_dev *dev)
@@ -130,17 +136,17 @@ static void t150_update_input(struct urb *urb)
 
 	// Reporting axies
 	input_report_abs(t150->joystick, ABS_GAS,
-		make_word(ss->gas_axis_low, ss->gas_axis_high));
+		le16_to_cpu(ss->gas_axis));
 
 	input_report_abs(t150->joystick, ABS_BRAKE,
-		make_word(ss->brake_axis_low, ss->brake_axis_high));
+		le16_to_cpu(ss->brake_axis));
 
 	input_report_abs(t150->joystick, ABS_Z,
-		make_word(ss->clutch_axis_low, ss->clutch_axis_high));
+		le16_to_cpu(ss->clutch_axis));
 
 	input_report_abs(t150->joystick, ABS_WHEEL,
 		(int16_t)
-		(make_word(ss->wheel_axis_low, ss->wheel_axis_high) - 0x8000)
+		(le16_to_cpu(ss->wheel_axis) - 0x8000)
 	);
 
 	// Reporting d-pad
