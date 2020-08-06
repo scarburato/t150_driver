@@ -59,9 +59,12 @@ This table contains a summary of each attribute
 |`ffb_intensity`    |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |
 
 ## How to install and load the driver
+You can try to run `install.sh` as root, the script should: copy the udev rules and other files in their appropiate positions, build and install the DKMS modules and add them to the list of modules to be loaded at boot.
+
+### Manually 
 Copy the udev rules into `/etc/udev/rules.d/` and reload the udev rules (or reboot)...
 
-### Build the drivers
+#### Build the drivers
 For a simple build: install all the required tools to compile (like `build-essential`, `linux-headers` etc...) and run
 ```
 make
