@@ -6,7 +6,7 @@ then
 	exit 1
 fi
 
-VERSION=0.6
+VERSION=0.6a
 
 echo "==== INSTALLING UDEV RULES ===="
 cp -vR ./files/* /
@@ -24,6 +24,13 @@ echo "==== DKMS ===="
 dkms add -m t150 -v $VERSION
 dkms build -m t150 -v $VERSION
 dkms install -m t150 -v $VERSION
+
+echo "==== SET UP LOAD AT BOOT ===="
+sed '/t150/d' /etc/modules
+sed '/thrustmaster_enable_full/d' /etc/modules
+
+echo "t150" >> /etc/modules
+echo "thrustmaster_enable_full" >> /etc/modules
 
 echo "==== LOADING NEW MODULES ===="
 modprobe thrustmaster_enable_full
