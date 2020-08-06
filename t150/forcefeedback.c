@@ -33,13 +33,12 @@ static struct urb* t150_ff_alloc_urb(struct t150 *t150, const size_t buffer_size
 		t150->pipe_out,
 		buffer,
 		buffer_size,
-		t150_ff_free_urb,
+		donothing_callback,
 		t150,
 		t150->bInterval_out
 	); 
 
 	return urb;
-			
 }
 
 /** 
@@ -51,6 +50,9 @@ static struct urb* t150_ff_alloc_urb(struct t150 *t150, const size_t buffer_size
 static inline int t150_init_ffb(struct t150 *t150)
 {
 	int errno, i;
+
+	// Setting up anchors
+	init_usb_anchor(&t150->misc_ffb_ops);
 
 	for (i = 0; i < t150_ffb_effects_length; i++)
 		set_bit(t150_ffb_effects[i], t150->joystick->ffbit);
@@ -81,26 +83,29 @@ static inline int t150_init_ffb(struct t150 *t150)
  */
 static inline void t150_free_ffb(struct t150 *t150)
 {
-	;
+	unsigned int i, j;
+
+	for(i = 0; i < FF_MAX_EFFECTS; i++)
+		for(j = 0; j < 3; j++)
+		{
+			if(! t150->update_ffb_urbs[i][j])
+				continue;
+
+			usb_kill_urb(t150->update_ffb_urbs[i][j]);
+			kzfree(t150->update_ffb_urbs[i][j]->transfer_buffer);
+			usb_free_urb(t150->update_ffb_urbs[i][j]);
+		}
 }
 
 /**
  * This function prepares an update packet to update an already uploaded effected
  * or when we're uploading a new effect
- * @param t150 our wheel
+ * @param ff_update the usb packed data to prepare
  * @param effect the effect to be updated
- * 
- * @returns 0 error, urb ptr otherwise
  */
-static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *effect)
+static void t150_ff_prepare_update(struct ff_update *ff_update, struct ff_effect *effect)
 {
-	struct ff_update *ff_update;
-	struct urb *urb = t150_ff_alloc_urb(t150, sizeof(struct ff_update));
 	int32_t level = 0;
-
-	if(!urb)
-		return 0;
-	ff_update = urb->transfer_buffer;
 
 	ff_update->pk_id1 = effect->id * 0x1c + 0x0e;
 	ff_update->f1 = 0x00;
@@ -126,14 +131,12 @@ static struct urb* t150_ff_prepare_update(struct t150 *t150, struct ff_effect *e
 
 		ff_update->effect.constant.level = (level / 0x01ff);
 		break;
-	}
-
-	return urb;	
+	}	
 }
 
 /**
- * Function to be called by when an user wants to an effect to the wheel.
- * A period effect - at least if it's periodic - has to be sent to the wheel
+ * Function called to upload an effect to the wheel.
+ * An effect has to be sent to the wheel
  * fragmented in 3 usb request.
  * @param dev the input_dev
  * @param effect the effect to upload
@@ -147,7 +150,6 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	struct t150 *t150 = input_get_drvdata(dev);
 	int errno, i;
 
-	struct urb *urbs[3];
 	struct ff_first *ff_first;
 	struct ff_commit *ff_commit;
 
@@ -155,32 +157,50 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 
 	//printk(KERN_INFO "t150: Uploading effect with id %i...\n", effect->id);
 
+	// No need to re-upload the same effect....
+	if(old && memcmp(effect, old, sizeof(struct ff_effect)) == 0)
+		return 0;
+
+	// If an un update is still pending for the same id we can kill it
+	for(i = 0; i < 3; i++)
+		usb_kill_urb(t150->update_ffb_urbs[effect->id][i]);
+
+	// If URBs were already allocated we can re-use them....
 	// Alloc first urb
-	urbs[0] = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
-	if(!urbs[0])
+	if(! t150->update_ffb_urbs[effect->id][0])
+		t150->update_ffb_urbs[effect->id][0] = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
+
+	if(! t150->update_ffb_urbs[effect->id][0])
 		return -ENOMEM;
-	ff_first = urbs[0]->transfer_buffer;
+
+	ff_first = t150->update_ffb_urbs[effect->id][0]->transfer_buffer;
 
 	// Alloc second urb
-	urbs[1] = t150_ff_prepare_update(t150, effect);
-	if(!urbs[1])
+	if(! t150->update_ffb_urbs[effect->id][1])
+		t150->update_ffb_urbs[effect->id][1] = t150_ff_alloc_urb(t150, sizeof(struct ff_update));
+
+	if(! t150->update_ffb_urbs[effect->id][1])
 	{
-		t150_ff_free_urb(urbs[0]);
+		t150_ff_free_urb(t150->update_ffb_urbs[effect->id][0]);
 		return -ENOMEM;
 	}
 
 	// Alloc third urb
-	urbs[2] = t150_ff_alloc_urb(t150, sizeof(struct ff_commit));
-	if(!urbs[2])
+	if(! t150->update_ffb_urbs[effect->id][2])
+		t150->update_ffb_urbs[effect->id][2] = t150_ff_alloc_urb(t150, sizeof(struct ff_commit));
+
+	if(! t150->update_ffb_urbs[effect->id][2])
 	{
-		t150_ff_free_urb(urbs[0]);
-		t150_ff_free_urb(urbs[1]);
+		t150_ff_free_urb(t150->update_ffb_urbs[effect->id][0]);
+		t150_ff_free_urb(t150->update_ffb_urbs[effect->id][1]);
 		return -ENOMEM;
 	}
-	ff_commit = urbs[2]->transfer_buffer;
+	ff_commit = t150->update_ffb_urbs[effect->id][2]->transfer_buffer;
 	
 
 	/** Preparing effect */
+	t150_ff_prepare_update(t150->update_ffb_urbs[effect->id][1]->transfer_buffer, effect);
+
 	ff_first->f0 = 0x02;
 	ff_first->pk_id0 = effect->id * 0x1c + 0x1c;
 	ff_first->f1 = 0;
@@ -191,7 +211,10 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	
 	ff_commit->f0 = 0x01;
 	ff_commit->id = effect->id;
-	ff_commit->length = cpu_to_le16(effect->replay.length);
+	if(effect->replay.length) // Ugly hack(?) per Assetto Corsa :P
+		ff_commit->length = cpu_to_le16(effect->replay.length);
+	else
+		ff_commit->length = cpu_to_le16(0xffff);
 	ff_commit->f1 = 0;
 	ff_commit->f2 = 0;
 	ff_commit->pk_id1 = effect->id * 0x1c + 0x0e;
@@ -221,7 +244,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	/** Submiting the effect to the wheel */
 	for(i = 0; i < 3; i++)
 	{
-		errno = usb_submit_urb(urbs[i], GFP_ATOMIC);
+		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][i], GFP_ATOMIC);
 		if(errno)
 		{
 			printk(KERN_ERR "t150: submitting urb, error %i\n", errno);
@@ -258,6 +281,8 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 	ff_change->mode = 0x00;
 	ff_change->times = 0x01;
 
+	//usb_anchor_urb(urb, &t150->misc_ffb_ops);
+	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
 	{
@@ -285,9 +310,6 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	struct ff_change_effect_status *ff_change;
 	int errno;
 
-	//printk(KERN_INFO "t150: I have to reproduce the effect %i for %i time(s)\n",effect_id, times);
-
-
 	// Alloc urb
 	urb = t150_ff_alloc_urb(t150, sizeof(struct ff_change_effect_status));
 	if(!urb)
@@ -299,11 +321,11 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	ff_change->mode = 0x41;
 	ff_change->times = times;
 
+	//usb_anchor_urb(urb, &t150->misc_ffb_ops);
+	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
-	{
 		printk(KERN_ERR "t150: unable to send URB, errno %i\n", errno);
-	}
 
 	return errno;
 }
@@ -328,11 +350,9 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	ff_change->f0 = 0x43;
 	ff_change->gain = gain / 0x1ff;
 
+	//usb_anchor_urb(urb, &t150->misc_ffb_ops);
+	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
-	{
 		printk(KERN_ERR "t150: unable to send URB, errno %i\n", errno);
-	}
-	
-	//return errno;
 }

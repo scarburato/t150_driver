@@ -29,18 +29,18 @@ struct t150
 	//struct mutex ff_mutex;
 
 	/** Used to run the initial wheel setup */
-	struct task_struct *setup_task;
+	//struct task_struct *setup_task;
 
 	// sysf STUFF
-	struct kobject *kobj_my_dir;
+	//struct kobject *kobj_my_dir;
 
 	// Input api stuff
 	char dev_path[128];
 	struct input_dev *joystick;
 
-	// Force feedback effects packages
-	struct urb *ff_packets[FF_MAX_EFFECTS][2][3];
-	uint8_t current_ff_packet[FF_MAX_EFFECTS];
+	struct usb_anchor misc_ffb_ops;
+	struct urb *update_ffb_urbs[FF_MAX_EFFECTS][3];
+	unsigned update_ffb_free_slot;
 
 	/** Mutex used to allow one operation at time on the Wheel */
 	struct mutex *lock;
@@ -53,7 +53,7 @@ struct t150
 /**
  * All data is stored in little endian
  */
-struct __attribute__((packed)) joy_state_packet
+struct __packed joy_state_packet
 {
 	/** 0x07 if this packet contains the wheel current input status */
 	uint8_t		packet_flags;
