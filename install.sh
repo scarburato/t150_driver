@@ -6,7 +6,7 @@ then
 	exit 1
 fi
 
-VERSION=0.5
+VERSION=0.6
 
 echo "==== INSTALLING UDEV RULES ===="
 cp -vR ./files/* /
