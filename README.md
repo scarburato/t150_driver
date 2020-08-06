@@ -15,6 +15,7 @@ At the moment the `t150` module has memory leaks in case of errors in the `t150_
   * Periodic effects:  `FF_SINE`, `FF_SAW_UP` and `FF_SAW_DOWN`
   * Constant effects:  `FF_CONSTANT`
   * Condition effects: `FF_SPRING`
+  * Damper effects:    `FF_DAMPER`
 
 ¹: Except for the shifter buttons, because I don't have the PRO version. However, I've guessed the clutch axis.
 
