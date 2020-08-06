@@ -1,11 +1,29 @@
 static inline int t150_init_attributes(struct t150 *t150, struct usb_interface *uif)
 {
-	device_create_file(&uif->dev, &dev_attr_return_force);
-	device_create_file(&uif->dev, &dev_attr_use_return_force);
-	device_create_file(&uif->dev, &dev_attr_range);
-	device_create_file(&uif->dev, &dev_attr_ffb_intensity);
+	int errno;
+
+	errno = device_create_file(&uif->dev, &dev_attr_return_force);
+	if(errno)
+		return errno;
+
+	errno = device_create_file(&uif->dev, &dev_attr_use_return_force);
+	if(errno)
+		goto err1;
+
+	errno = device_create_file(&uif->dev, &dev_attr_range);
+	if(errno)
+		goto err2;
+
+	errno = device_create_file(&uif->dev, &dev_attr_ffb_intensity);
+	if(errno)
+		goto err3;
 
 	return 0;
+
+err3:	device_remove_file(&uif->dev, &dev_attr_range);
+err2:	device_remove_file(&uif->dev, &dev_attr_use_return_force);
+err1:	device_remove_file(&uif->dev, &dev_attr_return_force);
+	return errno;
 }
 
 static inline void t150_free_attributes(struct t150 *t150, struct usb_interface *uif)
@@ -41,8 +59,8 @@ ret:	kfree(set);
 
 static ssize_t t150_show_return_force(struct device *dev, struct device_attribute *attr,char * buf )
 {
-	// TODO Read from wheel with USB request
-	return sscanf(buf, no_str);
+	// TODO Read from wheel with USB request, if even possible... 
+	return sprintf(buf, "%s", no_str);
 }
 
 static ssize_t t150_store_simulate_return_force(struct device *dev, struct device_attribute *attr,
@@ -90,8 +108,8 @@ ret:	kfree(set);
 
 static ssize_t t150_show_range(struct device *dev, struct device_attribute *attr,char * buf )
 {
-	// TODO Read from wheel with USB request
-	return sscanf(buf, no_str);
+	// TODO Read from wheel with USB request, if possible...
+	return sprintf(buf, "%s", no_str);
 }
 
 static ssize_t t150_store_ffb_intensity(struct device *dev, struct device_attribute *attr,
@@ -120,6 +138,6 @@ ret:	kfree(set);
 
 static ssize_t t150_show_ffb_intensity(struct device *dev, struct device_attribute *attr,char * buf )
 {
-	// TODO Read from wheel with USB request
-	return sscanf(buf, no_str);
+	// TODO Read from wheel with USB request, if possible...
+	return sprintf(buf, "%s", no_str);
 }

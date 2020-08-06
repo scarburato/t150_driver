@@ -1,5 +1,6 @@
 build/*
 .vscode
 .idea
-
-traffic/ffb/my_driver/*
+traffic/sniffer
+traffic/sender
+traffic/tests

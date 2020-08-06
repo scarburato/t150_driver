@@ -29,14 +29,18 @@ struct t150
 	//struct mutex ff_mutex;
 
 	/** Used to run the initial wheel setup */
-	struct task_struct *setup_task;
+	//struct task_struct *setup_task;
 
 	// sysf STUFF
-	struct kobject *kobj_my_dir;
+	//struct kobject *kobj_my_dir;
 
 	// Input api stuff
 	char dev_path[128];
 	struct input_dev *joystick;
+
+	struct usb_anchor misc_ffb_ops;
+	struct urb *update_ffb_urbs[FF_MAX_EFFECTS][3];
+	unsigned update_ffb_free_slot;
 
 	/** Mutex used to allow one operation at time on the Wheel */
 	struct mutex *lock;
@@ -47,9 +51,9 @@ struct t150
 
 //structs about packets entering the host
 /**
- *
+ * All data is stored in little endian
  */
-struct joy_state_packet
+struct __packed joy_state_packet
 {
 	/** 0x07 if this packet contains the wheel current input status */
 	uint8_t		packet_flags;
@@ -57,21 +61,17 @@ struct joy_state_packet
 	/* Range from 0x0000 (full left) to 0xffff (full right)
 	The range is relative to the current max rotation
 	**/
-	uint8_t		wheel_axis_low;
-	uint8_t		wheel_axis_high;
+	uint16_t	wheel_axis;
 
 	/** 0x000 when pedal released to 0x3ff when the pedal is fully pressed */
-	uint8_t		brake_axis_low;
-	uint8_t		brake_axis_high;
+	uint16_t	brake_axis;
 
 	/** 0x000 when pedal released to 0x3ff when the pedal is fully pressed */
-	uint8_t		gas_axis_low;
-	uint8_t		gas_axis_high;
+	uint16_t	gas_axis;
 
 	// FIXME This in absumtion!
-	/** 0x00 when pedal released to 0xff when the pedal is fully pressed */
-	uint8_t		clutch_axis_low;
-	uint8_t		clutch_axis_high;
+	/** 0x00 when pedal released to 0x3ff when the pedal is fully pressed */
+	uint16_t	clutch_axis;
 
 	uint8_t		__padding1; // UNKNOWN
 	uint8_t		__padding2; // UNKNOWN
@@ -121,7 +121,7 @@ static inline uint8_t word_low(const uint16_t word)
 	return word;
 }
 
-static inline void printP(const uint8_t const* print)
+static inline void printP(uint8_t const *const print)
 {
 	int i;
 	char printstr[55] = "t150: ";
@@ -130,6 +130,3 @@ static inline void printP(const uint8_t const* print)
 
 	printk(printstr);
 }
-
-/** Function declearatioinit **/
-static int t150_inital_usb_setup(void *data);

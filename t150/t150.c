@@ -38,18 +38,30 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 
 	// TODO CHECK FOR MEMORY FAIL
 	t150->joy_request_in = usb_alloc_urb(0, GFP_KERNEL);
+	if(!t150->joy_request_in)
+		return -ENOMEM;
+
 	t150->joy_request_out = usb_alloc_urb(0, GFP_KERNEL);
+	if(!t150->joy_request_out)
+	{
+		error_code = -ENOMEM;
+		goto error0;
+	}
 
 	t150->joy_data_in = kzalloc(sizeof(struct joy_state_packet), GFP_KERNEL);
+	if(!t150->joy_data_in)
+	{
+		error_code = -ENOMEM;
+		goto error1;
+	}
 
 	t150->lock = kzalloc(sizeof(struct mutex), GFP_KERNEL);
+	if(!t150->lock)
+	{
+		error_code = -ENOMEM;
+		goto error2;
+	}
 	//mutex_init(t150->lock);
-
-	t150->setup_task = kthread_create(
-		t150_inital_usb_setup,
-		t150,
-		"setup_task"
-	);
 
 	// From xpad.c
 	for (i = 0; i < 2; i++)
@@ -63,10 +75,10 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 				ep_irq_out = ep;
 	}
 
-	if (!ep_irq_in || !ep_irq_out) {
-		printk(KERN_INFO "NIGGER!\n");
+	if (!ep_irq_in || !ep_irq_out) 
+	{
 		error_code = -ENODEV;
-		goto error0;
+		goto error3;
 	}
 
 	t150->pipe_in = usb_rcvintpipe(t150->usb_device, ep_irq_in->bEndpointAddress);
@@ -75,20 +87,33 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 	t150->bInterval_in = ep_irq_in->bInterval;
 	t150->bInterval_out = ep_irq_out->bInterval;
 
-	t150_init_input(t150);
-	t150_init_ffb(t150);
-	input_register_device(t150->joystick);
+	error_code = t150_init_input(t150);
+	if(error_code)
+		goto error4;
+
+	error_code = t150_init_ffb(t150);
+	if(error_code)
+		goto error5;
+
+	error_code = input_register_device(t150->joystick);
+	if(error_code)
+		goto error6;
 	
-	t150_init_attributes(t150, interface);
+	error_code = t150_init_attributes(t150, interface);
+	if(error_code)
+		goto error7;
 
-	// Default settings here
-	/*t150->current_rotation = 0xffff; // 1080°
-	t150->current_return_force = 12; // 12%*/
+	return 0;
 
-// @TODO Handle errors
-error0:
+error7:	input_free_device(t150->joystick);
+error6: t150_free_ffb(t150);
+error5: t150_free_input(t150);
+error4:	;
+error3: kzfree(t150->lock);
+error2: kzfree(t150->joy_data_in);
+error1: usb_free_urb(t150->joy_request_out);
+error0:	usb_free_urb(t150->joy_request_in);
 	return error_code;
-
 }
 
 static int t150_probe(struct usb_interface *interface, const struct usb_device_id *id)
@@ -103,31 +128,17 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 	if(!t150)
 		return -ENOMEM;
 
-	t150_constructor(t150, interface);
+	error_code = t150_constructor(t150, interface);
+	if(error_code)
+		goto error0;
 
 	// Save
 	usb_set_intfdata(interface, t150);
 
-	// Start usb setup
-	wake_up_process(t150->setup_task);
-
 	return 0;
-error0:
-	kfree(t150);
+
+error0: kfree(t150);
 	return error_code;
-}
-
-/**
- * This function blindly mimic the Windows driver
- */
-static int t150_inital_usb_setup(void *data)
-{
-	struct t150 *t150 = data;
-
-	printk("t150: setup started!");
-
-	t150->joystick->open = t150_input_open;
-	return 0;
 }
 
 static void t150_disconnect(struct usb_interface *interface)
@@ -147,7 +158,7 @@ static void t150_disconnect(struct usb_interface *interface)
 	usb_free_urb(t150->joy_request_out);
 
 	// Force feedback 
-	t150_close_ffb(t150);
+	t150_free_ffb(t150);
 
 	// input deregister
 	t150_free_input(t150);
