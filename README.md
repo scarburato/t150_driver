@@ -3,7 +3,7 @@
 *This is not an official driver from Thrustmaster and is provided without any kind of warranty. Loading and using this driver is at your own risk; I don't take responsibility for kernel panics, devices bricked or any other kind of inconvenience*
 
 ## Project status
-At the moment the `t150` module has memory leaks in case of errors in the `t150_probe` function
+At the moment the `t150` module may have some memory leaks
 
 ### What's working 👌
 + All axis and buttons of the wheel are reported¹
