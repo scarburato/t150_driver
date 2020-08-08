@@ -17,8 +17,9 @@ static inline int t150_init_input(struct t150 *t150)
 	t150->joystick->name = nameWH;
 	t150->joystick->phys = t150->dev_path;
 	usb_to_input_id(t150->usb_device, &t150->joystick->id);
-	t150->joystick->id.product = USB_T150_PRODUCT_ID;
-	t150->joystick->id.vendor = USB_THRUSTMASTER_VENDOR_ID;
+	//t150->joystick->id.product = USB_T150_PRODUCT_ID;
+	//t150->joystick->id.vendor = USB_THRUSTMASTER_VENDOR_ID;
+	t150->joystick->dev.parent = &t150->usb_device->dev;
 
 	// Assi
 	input_set_abs_params(t150->joystick, ABS_GAS,    0x000,  0x3ff,  0, 0); // Gas

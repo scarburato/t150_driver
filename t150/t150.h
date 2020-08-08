@@ -1,6 +1,5 @@
 #define USB_THRUSTMASTER_VENDOR_ID	0x044f
 #define USB_T150_PRODUCT_ID		0xb677
-static const char *no_str = "Non implementato :/ \n";
 
 struct joy_state_packet;
 struct ff_first;
@@ -45,8 +44,16 @@ struct t150
 	/** Mutex used to allow one operation at time on the Wheel */
 	struct mutex *lock;
 
-	volatile uint16_t current_rotation;
-	volatile uint8_t current_return_force;
+	struct {
+		struct kthread *setup_task;
+		spinlock_t access_lock;
+		unsigned long access_lock_flags;
+
+		uint8_t autocenter_force;
+		bool autocenter_enabled;
+		uint16_t range;
+		uint8_t gain;
+	} settings;
 };
 
 //structs about packets entering the host

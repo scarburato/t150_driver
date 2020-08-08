@@ -11,6 +11,7 @@
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/fixp-arith.h>
+#include <linux/spinlock.h>
 
 #include "t150.h"
 //#include "magic.h"
@@ -31,6 +32,7 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 	struct usb_endpoint_descriptor *ep, *ep_irq_in = 0, *ep_irq_out = 0;
 
 	t150->usb_device = interface_to_usbdev(interface);
+	dev_set_drvdata(&t150->usb_device->dev, t150);
 
 	// Path used for the input subsystem
 	usb_make_path(t150->usb_device, t150->dev_path, sizeof(t150->dev_path));
