@@ -47,16 +47,18 @@ When the wheel receives the control packet it will reset and re-appear in the sy
 
 ### Setting up the wheel parameters
 You can edit the settings of each wheel attached to the machine by writing the sysfs attributes usually found in the 
-subdirectories at `/sys/bus/usb/drivers/t150`.
+subdirectories at `/sys/devices`. You can see in `dmesg` what path in /sys the input subsystem assigned to the wheel:
+for example if you see `input: Thrustmaster T150 steering wheel as /devices/pci0000:00/0000:00:14.0/usb1/1-1/input/input27`
+then the attributes will be located at `sys/devices/pci0000:00/0000:00:14.0/usb1/1-1/input/input27/device/`.
 
 This table contains a summary of each attribute
 
 |Attribute          |Value                         |Description                                                       |
 |-------------------|------------------------------|------------------------------------------------------------------|
 |`range`            |decimal from `270` to `1080`  |How far the wheel turns                                           |
-|`return_force`     |decimal from `0` to `100`     |The force used to re-center the wheel                             |
-|`use_return_force` |boolean                       |Use the user defined return force or let the game handle it trough ffb|
-|`ffb_intensity`    |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |
+|`autocenter`       |decimal from `0` to `100`     |The force used to re-center the wheel                             |
+|`enable_autocenter`|boolean 'y' or 'n'            |Use the user defined return force or let the game handle it trough ffb|
+|`gain`             |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |
 
 ## How to install and load the driver
 You can try to run `install.sh` as root, the script should: copy the udev rules and other files in their appropiate positions, build and install the DKMS modules and add them to the list of modules to be loaded at boot. 
