@@ -68,16 +68,6 @@ static int t150_input_open(struct input_dev *dev)
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh, ret;
 	printk(KERN_INFO "t150: opening input!\n");
-	//mutex_lock(t150->lock);
-
-	// Send magic codes
-	/*for(i = 0; i < 2; i++)
-		usb_interrupt_msg(
-			t150->usb_device,
-			t150->pipe_out,
-			packet_input_what, 2, &boh,
-			1000
-		);*/
 
 	ret = usb_interrupt_msg(
 		t150->usb_device,
@@ -132,9 +122,7 @@ static void t150_update_input(struct urb *urb)
 	struct t150 *t150 = (struct t150*)urb->context;
 	struct d_pad_pos d_pad_current_pos;
 	int i;
-
-	//mutex_unlock(t150->lock);
-
+	
 	// Reporting axies
 	input_report_abs(t150->joystick, ABS_GAS,
 		0x3ff - le16_to_cpu(ss->gas_axis));
@@ -168,6 +156,5 @@ static void t150_update_input(struct urb *urb)
 
 	input_sync(t150->joystick);
 
-	//mutex_lock(t150->lock);
 	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
 }

@@ -38,7 +38,6 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 	usb_make_path(t150->usb_device, t150->dev_path, sizeof(t150->dev_path));
 	strlcat(t150->dev_path, "/input0", sizeof(t150->dev_path));
 
-	// TODO CHECK FOR MEMORY FAIL
 	t150->joy_request_in = usb_alloc_urb(0, GFP_KERNEL);
 	if(!t150->joy_request_in)
 		return -ENOMEM;
@@ -56,14 +55,6 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 		error_code = -ENOMEM;
 		goto error1;
 	}
-
-	t150->lock = kzalloc(sizeof(struct mutex), GFP_KERNEL);
-	if(!t150->lock)
-	{
-		error_code = -ENOMEM;
-		goto error2;
-	}
-	//mutex_init(t150->lock);
 
 	// From xpad.c
 	for (i = 0; i < 2; i++)
@@ -111,7 +102,7 @@ error7:	input_free_device(t150->joystick);
 error6: t150_free_ffb(t150);
 error5: t150_free_input(t150);
 error4:	;
-error3: kzfree(t150->lock);
+error3: ;
 error2: kzfree(t150->joy_data_in);
 error1: usb_free_urb(t150->joy_request_out);
 error0:	usb_free_urb(t150->joy_request_in);

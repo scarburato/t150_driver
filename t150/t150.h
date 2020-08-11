@@ -24,14 +24,8 @@ struct t150
 	int pipe_out;
 	uint8_t bInterval_out;
 
-	// packets to be used with ffb
-	//struct mutex ff_mutex;
-
 	/** Used to run the initial wheel setup */
 	//struct task_struct *setup_task;
-
-	// sysf STUFF
-	//struct kobject *kobj_my_dir;
 
 	// Input api stuff
 	char dev_path[128];
@@ -40,9 +34,6 @@ struct t150
 	struct usb_anchor misc_ffb_ops;
 	struct urb *update_ffb_urbs[FF_MAX_EFFECTS][3];
 	unsigned update_ffb_free_slot;
-
-	/** Mutex used to allow one operation at time on the Wheel */
-	struct mutex *lock;
 
 	struct {
 		struct kthread *setup_task;
