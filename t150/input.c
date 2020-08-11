@@ -45,7 +45,7 @@ static inline int t150_init_input(struct t150 *t150)
 		t150->usb_device,
 		t150->pipe_in,
 		t150->joy_data_in,
-		sizeof(struct joy_state_packet),
+		sizeof(struct t150_state_packet),
 		t150_update_input,
 		t150,
 		t150->bInterval_in
@@ -118,11 +118,19 @@ static void t150_input_close(struct input_dev *dev)
  */
 static void t150_update_input(struct urb *urb)
 {
-	struct joy_state_packet *ss = urb->transfer_buffer;
+	struct t150_state_packet *packet = urb->transfer_buffer;
+	struct t150_input_state_packet *ss = &packet->data.input;
 	struct t150 *t150 = (struct t150*)urb->context;
 	struct d_pad_pos d_pad_current_pos;
 	int i;
-	
+
+	if(packet->type != STATE_PACKET_INPUT)
+	{
+		printk(KERN_WARNING "t150: recived a packet that is not an input state :/\n");
+		printP(urb->transfer_buffer, sizeof(struct t150_state_packet));
+		return;
+	}
+
 	// Reporting axies
 	input_report_abs(t150->joystick, ABS_GAS,
 		0x3ff - le16_to_cpu(ss->gas_axis));

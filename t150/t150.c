@@ -19,6 +19,7 @@
 #include "attributes.h"
 #include "settings.h"
 #include "forcefeedback.h"
+#include "packet.h"
 
 static void donothing_callback(struct urb *urb) {}
 
@@ -49,7 +50,7 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 		goto error0;
 	}
 
-	t150->joy_data_in = kzalloc(sizeof(struct joy_state_packet), GFP_KERNEL);
+	t150->joy_data_in = kzalloc(sizeof(struct t150_state_packet), GFP_KERNEL);
 	if(!t150->joy_data_in)
 	{
 		error_code = -ENOMEM;
@@ -102,8 +103,7 @@ error7:	input_free_device(t150->joystick);
 error6: t150_free_ffb(t150);
 error5: t150_free_input(t150);
 error4:	;
-error3: ;
-error2: kzfree(t150->joy_data_in);
+error3: kzfree(t150->joy_data_in);
 error1: usb_free_urb(t150->joy_request_out);
 error0:	usb_free_urb(t150->joy_request_in);
 	return error_code;
@@ -161,7 +161,6 @@ static void t150_disconnect(struct usb_interface *interface)
 
 	// Free buffers
 	kfree(t150->joy_data_in);
-	kfree(t150->lock);
 
 	// t150 free
 	kfree(t150);
