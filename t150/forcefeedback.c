@@ -335,11 +335,6 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
  */
 static int t150_ff_erase(struct input_dev *dev, int effect_id)
 {
-	//struct t150 *t150 = input_get_drvdata(dev);
-	//struct urb *urb;
-	//struct ff_change_effect_status *ff_change;
-	//int errno;
-
 	printk(KERN_WARNING "t150: I should destroy %i now...\n", effect_id);
 
 	/** When an effect is destroyed also a request to stop it is sent to 
@@ -349,26 +344,6 @@ static int t150_ff_erase(struct input_dev *dev, int effect_id)
 	 * effect. 
 	 */
 	return 0;
-	// Alloc urb
-	/*urb = t150_ff_alloc_urb(t150, sizeof(struct ff_first));
-	if(!urb)
-		return -ENOMEM;
-	ff_change = urb->transfer_buffer;
-
-	ff_change->f0 = 0x41;
-	ff_change->id = effect_id;
-	ff_change->mode = 0x00;
-	ff_change->times = 0x01;
-
-	//usb_anchor_urb(urb, &t150->misc_ffb_ops);
-	urb->complete = t150_ff_free_urb;
-	errno = usb_submit_urb(urb, GFP_KERNEL);
-	if(errno)
-	{
-		printk(KERN_ERR "t150: unable to send URB, errno %i\n", errno);
-	}
-
-	return errno;*/
 }
 
 /**
@@ -428,6 +403,10 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	
 	ff_change->f0 = 0x43;
 	ff_change->gain = gain / 0x1ff;
+
+	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	t150->settings.gain = ff_change->gain;
+	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
 
 	//usb_anchor_urb(urb, &t150->misc_ffb_ops);
 	urb->complete = t150_ff_free_urb;

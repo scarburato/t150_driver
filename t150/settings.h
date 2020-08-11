@@ -1,4 +1,4 @@
-#define SETTINGS_TIMEOUT 1000
+#define SETTINGS_TIMEOUT 20
 
 typedef uint8_t operation_t;
 #define SET40_RETURN_FORCE		0x03
