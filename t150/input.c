@@ -7,7 +7,6 @@ static inline int t150_init_input(struct t150 *t150)
 	int i;
 
 	t150->joystick = input_allocate_device();
-	printk(KERN_INFO "t150: Il signor Kernel mi ha dato %p, che gentile!\n", t150->joystick);
 
 	if(! (t150->joystick))
 		return -ENOMEM;
@@ -67,7 +66,6 @@ static int t150_input_open(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh, ret;
-	printk(KERN_INFO "t150: opening input!\n");
 
 	ret = usb_interrupt_msg(
 		t150->usb_device,
@@ -91,7 +89,6 @@ static void t150_input_close(struct input_dev *dev)
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh, i;
 
-	printk(KERN_INFO "t150: closing input!\n");
 	usb_kill_urb(t150->joy_request_in);
 
 	// Send magic codes

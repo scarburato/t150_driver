@@ -14,7 +14,6 @@
 #include <linux/spinlock.h>
 
 #include "t150.h"
-//#include "magic.h"
 #include "input.h"
 #include "attributes.h"
 #include "settings.h"

@@ -24,9 +24,6 @@ struct t150
 	int pipe_out;
 	uint8_t bInterval_out;
 
-	/** Used to run the initial wheel setup */
-	//struct task_struct *setup_task;
-
 	// Input api stuff
 	char dev_path[128];
 	struct input_dev *joystick;
@@ -36,7 +33,6 @@ struct t150
 	unsigned update_ffb_free_slot;
 
 	struct {
-		struct kthread *setup_task;
 		spinlock_t access_lock;
 		unsigned long access_lock_flags;
 
@@ -44,6 +40,8 @@ struct t150
 		bool autocenter_enabled;
 		uint16_t range;
 		uint8_t gain;
+
+		uint8_t firmware_version;
 	} settings;
 };
 

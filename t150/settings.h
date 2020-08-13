@@ -1,4 +1,4 @@
-#define SETTINGS_TIMEOUT 20
+#define SETTINGS_TIMEOUT 10
 
 typedef uint8_t operation_t;
 #define SET40_RETURN_FORCE		0x03
@@ -32,3 +32,5 @@ static int t150_set_gain(struct t150 *t150, uint8_t gain);
 static __always_inline int t150_set_autocenter(struct t150 *t150, uint8_t autocenter_force);
 static __always_inline int t150_set_enable_autocenter(struct t150 *t150, bool enable);
 static __always_inline int t150_set_range(struct t150 *t150, uint16_t range);
+
+static int t150_setup_task(struct t150 *t150);

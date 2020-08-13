@@ -1,6 +1,6 @@
 struct __packed t150_input_state_packet
 {
-	/* Range from 0x0000 (full left) to 0xffff (full right)
+	/** Range from 0x0000 (full left) to 0xffff (full right)
 	The range is relative to the current max rotation
 	**/
 	uint16_t	wheel_axis;
