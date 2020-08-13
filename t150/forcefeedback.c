@@ -65,9 +65,7 @@ static inline int t150_init_ffb(struct t150 *t150)
 		printk(KERN_ERR "t150: error create ff :(. errno=%i\n", errno);
 		return errno;
 	}
-	printk(KERN_INFO "t150: ff created :)\n");
 
-	//t150->joystick->ff->set_autocenter = t150_ffb_set_autocenter;
 	t150->joystick->ff->upload = t150_ff_upload;
 	t150->joystick->ff->erase = t150_ff_erase;
 	t150->joystick->ff->playback = t150_ff_play;
@@ -383,7 +381,6 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	ff_change->mode = times ? 0x41 : 0x00; // Play or stop ?
 	ff_change->times = times ? times : 0x01;
 
-	//usb_anchor_urb(urb, &t150->misc_ffb_ops);
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
@@ -416,7 +413,6 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	t150->settings.gain = ff_change->gain;
 	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
 
-	//usb_anchor_urb(urb, &t150->misc_ffb_ops);
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)

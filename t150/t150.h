@@ -24,15 +24,6 @@ struct t150
 	int pipe_out;
 	uint8_t bInterval_out;
 
-	// packets to be used with ffb
-	//struct mutex ff_mutex;
-
-	/** Used to run the initial wheel setup */
-	//struct task_struct *setup_task;
-
-	// sysf STUFF
-	//struct kobject *kobj_my_dir;
-
 	// Input api stuff
 	char dev_path[128];
 	struct input_dev *joystick;
@@ -41,11 +32,7 @@ struct t150
 	struct urb *update_ffb_urbs[FF_MAX_EFFECTS][3];
 	unsigned update_ffb_free_slot;
 
-	/** Mutex used to allow one operation at time on the Wheel */
-	struct mutex *lock;
-
 	struct {
-		struct kthread *setup_task;
 		spinlock_t access_lock;
 		unsigned long access_lock_flags;
 
@@ -53,59 +40,9 @@ struct t150
 		bool autocenter_enabled;
 		uint16_t range;
 		uint8_t gain;
+
+		uint8_t firmware_version;
 	} settings;
-};
-
-//structs about packets entering the host
-/**
- * All data is stored in little endian
- */
-struct __packed joy_state_packet
-{
-	/** 0x07 if this packet contains the wheel current input status */
-	uint8_t		packet_flags;
-
-	/* Range from 0x0000 (full left) to 0xffff (full right)
-	The range is relative to the current max rotation
-	**/
-	uint16_t	wheel_axis;
-
-	/** 0x000 when pedal released to 0x3ff when the pedal is fully pressed */
-	uint16_t	brake_axis;
-
-	/** 0x000 when pedal released to 0x3ff when the pedal is fully pressed */
-	uint16_t	gas_axis;
-
-	// FIXME This in absumtion!
-	/** 0x00 when pedal released to 0x3ff when the pedal is fully pressed */
-	uint16_t	clutch_axis;
-
-	uint8_t		__padding1; // UNKNOWN
-	uint8_t		__padding2; // UNKNOWN
-
-	/** Some buttons */
-	uint8_t		buttons_state0;
-	uint8_t		buttons_state1;
-
-	uint8_t		__padding5; // UNKNOWN
-
-	uint8_t		cross_state;
-};
-
-const struct d_pad_pos
-{
-	int8_t y;
-	int8_t x;
-} CROSS_POSITIONS[] = {
-	{-1,  0}, // 0x00 north
-	{-1, +1}, // 0x01 north-est
-	{0 , +1}, // 0x02 test
-	{+1, +1}, // 0x03 south-est
-	{+1,  0}, // 0x04 south
-	{+1, -1}, // 0x05 south-west
-	{0 , -1}, // 0x06 west
-	{-1, -1}, // 0x07 north-west
-	{0, 0}
 };
 
 /**
@@ -128,12 +65,18 @@ static inline uint8_t word_low(const uint16_t word)
 	return word;
 }
 
-static inline void printP(uint8_t const *const print)
+static inline void printP(uint8_t const *const bytes, const size_t length)
 {
 	int i;
-	char printstr[55] = "t150: ";
-	for(i = 0; i < 15; i++)
-		sprintf(&printstr[6 + i*3],"%02hhX ", print[i]);
+	char printstr[202] = "t150: ";
+
+	if(length > 64) // Packet too big :/
+		return;
+
+	for(i = 0; i < length; i++)
+		sprintf( printstr + (6 + i*3),"%02hhX ", bytes[i]);
+
+	sprintf(printstr + (9 + length*3),"\n");
 
 	printk(printstr);
 }

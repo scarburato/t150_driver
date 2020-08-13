@@ -7,7 +7,6 @@ static inline int t150_init_input(struct t150 *t150)
 	int i;
 
 	t150->joystick = input_allocate_device();
-	printk(KERN_INFO "t150: Il signor Kernel mi ha dato %p, che gentile!\n", t150->joystick);
 
 	if(! (t150->joystick))
 		return -ENOMEM;
@@ -45,7 +44,7 @@ static inline int t150_init_input(struct t150 *t150)
 		t150->usb_device,
 		t150->pipe_in,
 		t150->joy_data_in,
-		sizeof(struct joy_state_packet),
+		sizeof(struct t150_state_packet),
 		t150_update_input,
 		t150,
 		t150->bInterval_in
@@ -67,17 +66,6 @@ static int t150_input_open(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh, ret;
-	printk(KERN_INFO "t150: opening input!\n");
-	//mutex_lock(t150->lock);
-
-	// Send magic codes
-	/*for(i = 0; i < 2; i++)
-		usb_interrupt_msg(
-			t150->usb_device,
-			t150->pipe_out,
-			packet_input_what, 2, &boh,
-			1000
-		);*/
 
 	ret = usb_interrupt_msg(
 		t150->usb_device,
@@ -101,7 +89,6 @@ static void t150_input_close(struct input_dev *dev)
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh, i;
 
-	printk(KERN_INFO "t150: closing input!\n");
 	usb_kill_urb(t150->joy_request_in);
 
 	// Send magic codes
@@ -128,12 +115,18 @@ static void t150_input_close(struct input_dev *dev)
  */
 static void t150_update_input(struct urb *urb)
 {
-	struct joy_state_packet *ss = urb->transfer_buffer;
+	struct t150_state_packet *packet = urb->transfer_buffer;
+	struct t150_input_state_packet *ss = &packet->data.input;
 	struct t150 *t150 = (struct t150*)urb->context;
 	struct d_pad_pos d_pad_current_pos;
 	int i;
 
-	//mutex_unlock(t150->lock);
+	if(packet->type != STATE_PACKET_INPUT)
+	{
+		printk(KERN_WARNING "t150: recived a packet that is not an input state :/\n");
+		printP(urb->transfer_buffer, sizeof(struct t150_state_packet));
+		return;
+	}
 
 	// Reporting axies
 	input_report_abs(t150->joystick, ABS_GAS,
@@ -168,6 +161,5 @@ static void t150_update_input(struct urb *urb)
 
 	input_sync(t150->joystick);
 
-	//mutex_lock(t150->lock);
 	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
 }

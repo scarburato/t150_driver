@@ -132,3 +132,46 @@ static int t150_settings_set40(
 
 	return errno;
 }
+
+static int t150_setup_task(struct t150 *t150)
+{
+	int errno = 0;
+	uint8_t *fw_version;
+
+	fw_version = kzalloc(8, GFP_KERNEL);
+
+	// Retrive current version
+	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	errno = usb_control_msg(
+		t150->usb_device,
+		usb_rcvctrlpipe(t150->usb_device, 0),
+		86, 0xc1, 0, 0, fw_version, 8, SETTINGS_TIMEOUT
+	);
+	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
+
+	if(errno < 0)
+		printk(KERN_ERR "t150: Error %d while sending the control URB to retrive firmware version\n", errno);
+	else
+		t150->settings.firmware_version = fw_version[1];
+
+	errno = t150_set_gain(t150, 80);
+	if(errno)
+		printk(KERN_ERR "t150: Error %d while setting the t150 default gain\n", errno);
+
+	errno = t150_set_enable_autocenter(t150, false);
+	if(errno)
+		printk(KERN_ERR "t150: Error %d while setting the t150 default enable_autocenter\n", errno);
+
+	errno = t150_set_autocenter(t150, 50);
+	if(errno)
+		printk(KERN_ERR "t150: Error %d while setting the t150 default autocenter\n", errno);
+
+	errno = t150_set_range(t150, 0xffff);
+	if(errno)
+		printk(KERN_ERR "t150: Error %d while setting the t150 default range\n", errno);
+
+	printk(KERN_INFO "t150: setup completed! Firmware version is %d\n", t150->settings.firmware_version);
+
+	kzfree(fw_version);
+	return errno;
+}

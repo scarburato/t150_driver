@@ -59,6 +59,7 @@ This table contains a summary of each attribute
 |`autocenter`       |decimal from `0` to `100`     |The force used to re-center the wheel                             |
 |`enable_autocenter`|boolean 'y' or 'n'            |Use the user defined return force or let the game handle it trough ffb|
 |`gain`             |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |
+|`firmware_version` |decimal                       |Read only, the current firmware running on the wheel              |
 
 ## How to install and load the driver
 You can try to run `install.sh` as root, the script should: copy the udev rules and other files in their appropiate positions, build and install the DKMS modules and add them to the list of modules to be loaded at boot. 
