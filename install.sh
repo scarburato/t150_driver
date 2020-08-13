@@ -6,12 +6,13 @@ then
 	exit 1
 fi
 
-VERSION=0.6b
+VERSION=0.6c
 
 echo "==== INSTALLING UDEV RULES ===="
 cp -vR ./files/* /
 
 echo "==== CONFIG DKMS ===="
+rm -rf /usr/src/t150-*
 mkdir "/usr/src/t150-$VERSION"
 mkdir /usr/src/build
 
