@@ -12,6 +12,7 @@
 #include <linux/delay.h>
 #include <linux/fixp-arith.h>
 #include <linux/spinlock.h>
+#include <linux/hid.h>
 
 #include "t150.h"
 #include "input.h"
@@ -26,35 +27,35 @@ static void donothing_callback(struct urb *urb) {}
  * @param t150 pointer to the t150 structor to init
  * @param interface pointer to usb interface which the wheel is connected to
  */
-static inline int t150_constructor(struct t150 *t150,struct usb_interface *interface)
+static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_device)
 {
 	int i, error_code = 0;
 	struct usb_endpoint_descriptor *ep, *ep_irq_in = 0, *ep_irq_out = 0;
+	struct usb_interface interface = to_usb_interface(hid_device->dev.parent);
 
 	t150->usb_device = interface_to_usbdev(interface);
+
+	// Saving ref to t150
 	dev_set_drvdata(&t150->usb_device->dev, t150);
+	hid_set_drvdata(hid_device, t150);
+
+	error_code = hid_parse(hid_device);
+	if (error_code) 
+	{
+		hid_err(hdev, "hid_parse() failed\n");
+		return error_code;
+	}
+
+	error_code = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
+	if (error_code) 
+	{
+		hid_err(hid_device, "hid_hw_start() failed\n");
+		return error_code;
+	}
 
 	// Path used for the input subsystem
 	usb_make_path(t150->usb_device, t150->dev_path, sizeof(t150->dev_path));
 	strlcat(t150->dev_path, "/input0", sizeof(t150->dev_path));
-
-	t150->joy_request_in = usb_alloc_urb(0, GFP_KERNEL);
-	if(!t150->joy_request_in)
-		return -ENOMEM;
-
-	t150->joy_request_out = usb_alloc_urb(0, GFP_KERNEL);
-	if(!t150->joy_request_out)
-	{
-		error_code = -ENOMEM;
-		goto error0;
-	}
-
-	t150->joy_data_in = kzalloc(sizeof(struct t150_state_packet), GFP_KERNEL);
-	if(!t150->joy_data_in)
-	{
-		error_code = -ENOMEM;
-		goto error1;
-	}
 
 	// From xpad.c
 	for (i = 0; i < 2; i++)
@@ -92,7 +93,7 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 	if(error_code)
 		goto error6;
 	
-	error_code = t150_init_attributes(t150, interface);
+	error_code = t150_init_attributes(t150);
 	if(error_code)
 		goto error7;
 
@@ -103,12 +104,10 @@ error6: t150_free_ffb(t150);
 error5: t150_free_input(t150);
 error4:	;
 error3: kzfree(t150->joy_data_in);
-error1: usb_free_urb(t150->joy_request_out);
-error0:	usb_free_urb(t150->joy_request_in);
 	return error_code;
 }
 
-static int t150_probe(struct usb_interface *interface, const struct usb_device_id *id)
+static int t150_probe(struct hid_device *hid_device, const struct hid_device_id *id)
 {
 	int error_code = 0;
 	struct t150 *t150;
@@ -120,12 +119,9 @@ static int t150_probe(struct usb_interface *interface, const struct usb_device_i
 	if(!t150)
 		return -ENOMEM;
 
-	error_code = t150_constructor(t150, interface);
+	error_code = t150_constructor(t150, hid_device);
 	if(error_code)
 		goto error0;
-
-	// Save
-	usb_set_intfdata(interface, t150);
 
 	return 0;
 
@@ -133,13 +129,13 @@ error0: kfree(t150);
 	return error_code;
 }
 
-static void t150_disconnect(struct usb_interface *interface)
+static void t150_remove(struct hid_device *hid_device)
 {
 	struct t150 *t150;
 
 	printk(KERN_INFO "t150: T150 Wheel removed. Bye\n");
 
-	t150 = usb_get_intfdata(interface);
+	t150 = hid_get_drvdata(interface);
 
 	// Stop al pending requests
 	usb_kill_urb(t150->joy_request_in);
@@ -156,7 +152,7 @@ static void t150_disconnect(struct usb_interface *interface)
 	t150_free_input(t150);
 
 	// sysf free
-	t150_free_attributes(t150, interface);
+	t150_free_attributes(t150);
 
 	// Free buffers
 	kfree(t150->joy_data_in);
@@ -176,19 +172,20 @@ static void t150_disconnect(struct usb_interface *interface)
  *
  *******************************************************************/
 
-static struct usb_device_id t150_table[] =
+static struct hid_device_id t150_table[] =
 {
-	{ USB_DEVICE(USB_THRUSTMASTER_VENDOR_ID, USB_T150_PRODUCT_ID) },
+	{ HID_USB_DEVICE(USB_THRUSTMASTER_VENDOR_ID, USB_T150_PRODUCT_ID) },
 	{} /* Terminating entry */
 };
-MODULE_DEVICE_TABLE (usb, t150_table);
+MODULE_DEVICE_TABLE (hid, t150_table);
 
-static struct usb_driver t150_driver =
+static struct hid_driver t150_driver =
 {
 	.name = "t150",
 	.id_table = t150_table,
 	.probe = t150_probe,
-	.disconnect = t150_disconnect,
+	.remove = t150_remove,
+	.raw_event = 0 // TODO add my parser from input.c
 };
 
 static int __init t150_init(void)
@@ -210,7 +207,7 @@ static int __init t150_init(void)
 	*packet_input_what = cpu_to_le16(0x0542);
 	*packet_input_close = cpu_to_le16(0x0042);
 
-	errno = usb_register(&t150_driver);
+	errno = hid_register_driver(&t150_driver);
 	if(errno)
 		goto err3;
 	else
@@ -228,7 +225,7 @@ static void __exit t150_exit(void)
 	kzfree(packet_input_what);
 	kzfree(packet_input_close);
 
-	usb_deregister(&t150_driver);
+	hid_unregister_driver(&t150_driver);
 }
 
 module_init(t150_init);

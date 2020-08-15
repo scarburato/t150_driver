@@ -13,14 +13,10 @@ struct t150
 	struct usb_device *usb_device;
 
 	// Stuff to read from the wheel
-	struct joy_state_packet *joy_data_in;
-	struct urb *joy_request_in;
 	int pipe_in;
 	uint8_t bInterval_in;
 
 	// Stuff to write to the wheel
-	struct joy_state_packet *joy_data_in_dma;
-	struct urb *joy_request_out;
 	int pipe_out;
 	uint8_t bInterval_out;
 

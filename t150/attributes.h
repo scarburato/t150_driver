@@ -7,8 +7,8 @@
  *******************************************************************/
 /***/
 
-static inline int t150_init_attributes(struct t150 *t150, struct usb_interface *uif);
-static inline void t150_free_attributes(struct t150 *t150, struct usb_interface *uif);
+static inline int t150_init_attributes(struct t150 *t150);
+static inline void t150_free_attributes(struct t150 *t150);
 
 static ssize_t t150_store_return_force(struct device *dev, struct device_attribute *attr,
 	const char *buf, size_t count);

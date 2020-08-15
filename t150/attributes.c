@@ -1,4 +1,4 @@
-static inline int t150_init_attributes(struct t150 *t150, struct usb_interface *uif)
+static inline int t150_init_attributes(struct t150 *t150)
 {
 	int errno;
 
@@ -35,7 +35,7 @@ err1:	device_remove_file(&t150->usb_device->dev, &dev_attr_autocenter);
 	return errno;
 }
 
-static inline void t150_free_attributes(struct t150 *t150, struct usb_interface *uif)
+static inline void t150_free_attributes(struct t150 *t150)
 {
 	device_remove_file(&t150->usb_device->dev, &dev_attr_autocenter);
 	device_remove_file(&t150->usb_device->dev, &dev_attr_enable_autocenter);
