@@ -1,24 +1,25 @@
 #!/bin/bash
 
+INIT_DRIVER_REPO="https://github.com/scarburato/hid-tminit"
+VERSION=0.6c
+
 if [ ${EUID} -ne 0 ]
 then 
 	echo "You are not running this script as root!"
 	exit 1
 fi
 
-VERSION=0.6c
-
-echo "==== INSTALLING UDEV RULES ===="
-cp -vR ./files/* /
+echo "==== REMOVING OLD VERSIONS ===="
 
 echo "==== CONFIG DKMS ===="
-rm -rf /usr/src/t150-*
+#rm -rf /usr/src/t150-*
 mkdir "/usr/src/t150-$VERSION"
-mkdir /usr/src/build
+mkdir "/usr/src/t150-$VERSION/build"
 
 cp -R ./t150 "/usr/src/t150-$VERSION/t150"
-cp -R ./thrustmaster_enable_full "/usr/src/t150-$VERSION/thrustmaster_enable_full"
-cp ./Makefile "/usr/src/t150-$VERSION/"
+mkdir "/usr/src/t150-$VERSION/hid-tminit"
+git clone $INIT_DRIVER_REPO "/usr/src/t150-$VERSION/hid-tminit"
+cp ./dkms_make.mak "/usr/src/t150-$VERSION/Makefile"
 cp ./dkms.conf "/usr/src/t150-$VERSION/"
 
 echo "==== DKMS ===="
@@ -28,11 +29,16 @@ dkms install -m t150 -v $VERSION
 
 echo "==== SET UP LOAD AT BOOT ===="
 sed '/t150/d' /etc/modules
-sed '/thrustmaster_enable_full/d' /etc/modules
+sed '/hid-tminit/d' /etc/modules
 
 echo "t150" >> /etc/modules
-echo "thrustmaster_enable_full" >> /etc/modules
+echo "hid-tminit" >> /etc/modules
+
+echo "==== INSTALLING UDEV RULES ===="
+cp -vR ./files/* /
+udevadm control --reload
+udevadm trigger
 
 echo "==== LOADING NEW MODULES ===="
-modprobe thrustmaster_enable_full
+modprobe hid-tminit
 modprobe t150
