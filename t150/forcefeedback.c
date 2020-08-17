@@ -399,6 +399,7 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	int errno;
 	struct urb *urb;
 	struct ff_change_gain *ff_change;
+	unsigned long flags;
 
 	urb = t150_ff_alloc_urb(t150, sizeof(struct ff_change_gain));
 	if(!urb)
@@ -409,9 +410,9 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	ff_change->f0 = 0x43;
 	ff_change->gain = gain / 0x1ff;
 
-	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	spin_lock_irqsave(&t150->settings.access_lock, flags);
 	t150->settings.gain = ff_change->gain;
-	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);

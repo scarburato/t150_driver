@@ -28,8 +28,8 @@ dkms build -m t150 -v $VERSION
 dkms install -m t150 -v $VERSION
 
 echo "==== SET UP LOAD AT BOOT ===="
-sed '/t150/d' /etc/modules
-sed '/hid-tminit/d' /etc/modules
+sed -i '/t150/d' /etc/modules
+sed -i '/hid-tminit/d' /etc/modules
 
 echo "t150" >> /etc/modules
 echo "hid-tminit" >> /etc/modules
