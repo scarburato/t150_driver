@@ -1,3 +1,5 @@
+#include <linux/mutex.h>
+
 #define USB_THRUSTMASTER_VENDOR_ID	0x044f
 #define USB_T150_PRODUCT_ID		0xb677
 
@@ -31,6 +33,8 @@ struct t150
 	struct usb_anchor misc_ffb_ops;
 	struct urb *update_ffb_urbs[FF_MAX_EFFECTS][3];
 	unsigned update_ffb_free_slot;
+
+	struct mutex lock;
 
 	struct {
 		spinlock_t access_lock;
