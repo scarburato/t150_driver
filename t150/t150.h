@@ -34,7 +34,6 @@ struct t150
 
 	struct {
 		spinlock_t access_lock;
-		unsigned long access_lock_flags;
 
 		uint8_t autocenter_force;
 		bool autocenter_enabled;
