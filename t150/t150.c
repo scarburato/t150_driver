@@ -55,6 +55,7 @@ static inline int t150_constructor(struct t150 *t150,struct usb_interface *inter
 		error_code = -ENOMEM;
 		goto error1;
 	}
+	spin_lock_init(&t150->settings.access_lock);
 
 	// From xpad.c
 	for (i = 0; i < 2; i++)
