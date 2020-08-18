@@ -262,24 +262,20 @@ static __always_inline void t150_ff_prepare_commit(struct ff_commit *ff_commit, 
  * @param old If I have to update an already uploaded effect this is not 0
  * 
  * @return 0 if no errors occured
- * @TODO refactor
  */
 static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struct ff_effect *old)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
-	int errno, i;
+	int errno = 0;
+	bool failed = false;
 
-	struct ff_first ff_first_old;
-	struct ff_update ff_update_old;
-	struct ff_commit ff_commit_old;
+	struct ff_first ff_first_old, ff_first_new;
+	struct ff_update ff_update_old, ff_update_new;
+	struct ff_commit ff_commit_old, ff_commit_new;
 
 	// No need to re-upload the same effect....
 	if(old && memcmp(effect, old, sizeof(struct ff_effect)) == 0)
 		return 0;
-
-	// If an un update is still pending for the same id we can kill it
-	for(i = 0; i < 3; i++)
-		usb_kill_urb(t150->update_ffb_urbs[effect->id][i]);
 
 	// If URBs were already allocated we can re-use them....
 	// Alloc first urb
@@ -294,26 +290,19 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		t150->update_ffb_urbs[effect->id][1] = t150_ff_alloc_urb(t150, sizeof(struct ff_update));
 
 	if(! t150->update_ffb_urbs[effect->id][1])
-	{
-		t150_ff_free_urb(t150->update_ffb_urbs[effect->id][0]);
-		return -ENOMEM;
-	}
+		goto free0;
 
 	// Alloc third urb
 	if(! t150->update_ffb_urbs[effect->id][2])
 		t150->update_ffb_urbs[effect->id][2] = t150_ff_alloc_urb(t150, sizeof(struct ff_commit));
 
 	if(! t150->update_ffb_urbs[effect->id][2])
-	{
-		t150_ff_free_urb(t150->update_ffb_urbs[effect->id][0]);
-		t150_ff_free_urb(t150->update_ffb_urbs[effect->id][1]);
-		return -ENOMEM;
-	}	
+		goto free1;	
 
 	/** Preparing effect */
-	t150_ff_preapre_first(t150->update_ffb_urbs[effect->id][0]->transfer_buffer, effect);
-	t150_ff_prepare_update(t150->update_ffb_urbs[effect->id][1]->transfer_buffer, effect);
-	t150_ff_prepare_commit(t150->update_ffb_urbs[effect->id][2]->transfer_buffer, effect);
+	t150_ff_preapre_first(&ff_first_new, effect);
+	t150_ff_prepare_update(&ff_update_new, effect);
+	t150_ff_prepare_commit(&ff_commit_new, effect);
 
 	if(old){
 		t150_ff_preapre_first(&ff_first_old, old);
@@ -325,31 +314,46 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	 * If an old is present and the result packet are the same we skip an URB
 	 * unless you define T150_FF_BLIND_UPLOAD as true
 	 */
-	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_first_old, t150->update_ffb_urbs[effect->id][0]->transfer_buffer, sizeof(struct ff_first))){
+	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_first_old, &ff_first_new, sizeof(struct ff_first))){
+		usb_kill_urb(t150->update_ffb_urbs[effect->id][0]);
+
+		memcpy(t150->update_ffb_urbs[effect->id][0]->transfer_buffer, &ff_first_new, sizeof(struct ff_first));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][0], GFP_ATOMIC);
-		if(errno){
-			printk(KERN_ERR "t150: submitting ffb 0 urb, error %i\n", errno);
-			return errno;
-		}
+		if(errno)
+			printk(KERN_ERR "t150: submitting ffb 0 urb of effect %d, error %d\n", effect->id ,errno);
+
+		failed = failed || errno;
 	}
 
-	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_update_old, t150->update_ffb_urbs[effect->id][1]->transfer_buffer, sizeof(struct ff_update))){
+	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_update_old, &ff_update_new, sizeof(struct ff_update))){
+		usb_kill_urb(t150->update_ffb_urbs[effect->id][1]);
+
+		memcpy(t150->update_ffb_urbs[effect->id][1]->transfer_buffer, &ff_update_new, sizeof(struct ff_update));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][1], GFP_ATOMIC);
-		if(errno){
-			printk(KERN_ERR "t150: submitting ffb 1 urb, error %i\n", errno);
-			return errno;
-		}
+		if(errno)
+			printk(KERN_ERR "t150: submitting ffb 1 urb of effect %d, error %d\n", effect->id ,errno);
+		
+		failed = failed || errno;
 	}
 
-	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_commit_old, t150->update_ffb_urbs[effect->id][2]->transfer_buffer, sizeof(struct ff_commit))){
+	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_commit_old, &ff_commit_new, sizeof(struct ff_commit))){
+		usb_kill_urb(t150->update_ffb_urbs[effect->id][2]);
+
+		memcpy(t150->update_ffb_urbs[effect->id][2]->transfer_buffer, &ff_commit_new, sizeof(struct ff_commit));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][2], GFP_ATOMIC);
-		if(errno){
-			printk(KERN_ERR "t150: submitting ffb 2 urb, error %i\n", errno);
-			return errno;
-		}
+		if(errno)
+			printk(KERN_ERR "t150: submitting ffb 2 urb of effect %d, error %d\n", effect->id ,errno);
+		
+		failed = failed || errno;
 	}
 
-	return 0;
+	return failed ? -EIO : 0;
+
+free1:	t150_ff_free_urb(t150->update_ffb_urbs[effect->id][1]);
+	t150->update_ffb_urbs[effect->id][1] = 0;
+free0:	t150_ff_free_urb(t150->update_ffb_urbs[effect->id][0]);
+	t150->update_ffb_urbs[effect->id][0] = 0;
+	return -ENOMEM;
 }
 
 /**
