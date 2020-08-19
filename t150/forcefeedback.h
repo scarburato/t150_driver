@@ -1,3 +1,4 @@
+#define T150_FF_BLIND_COMPUTE_EFFECT		false
 #define T150_FF_BLIND_UPLOAD			false
 
 #define T150_FF_FIRST_CODE_CONSTANT		0x02

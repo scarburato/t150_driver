@@ -263,7 +263,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	struct ff_commit ff_commit_old, ff_commit_new;
 
 	// No need to re-upload the same effect....
-	if(old && memcmp(effect, old, sizeof(struct ff_effect)) == 0)
+	if(!T150_FF_BLIND_COMPUTE_EFFECT && old && memcmp(effect, old, sizeof(struct ff_effect)) == 0)
 		return 0;
 
 	// If URBs were already allocated we can re-use them....
