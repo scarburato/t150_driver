@@ -7,10 +7,12 @@ static int t150_set_gain(struct t150 *t150, uint8_t gain)
 {
 	int boh, errno;
 	uint8_t *buffer = kzalloc(2, GFP_KERNEL);
+	unsigned long flags;
+
 	buffer[0] = 0x43;
 	buffer[1] = gain;
 
-	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_lock(&t150->lock);
 
 	// Send to the wheel desidered return force
 	errno = usb_interrupt_msg(
@@ -21,12 +23,15 @@ static int t150_set_gain(struct t150 *t150, uint8_t gain)
 		SETTINGS_TIMEOUT
 	);
 
-	if(!errno)
+	if(!errno) {
+		spin_lock_irqsave(&t150->settings.access_lock, flags);
 		t150->settings.gain = gain;
-	else
+		spin_unlock_irqrestore(&t150->settings.access_lock, flags);
+	} else {
 		printk(KERN_ERR "t150: Operation set gain failed with code %d", errno);
+	}
 
-	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_unlock(&t150->lock);
 
 	kzfree(buffer);
 
@@ -40,15 +45,19 @@ static __always_inline int t150_set_autocenter(struct t150 *t150, uint8_t autoce
 {
 	uint8_t *buffer = kzalloc(4, GFP_KERNEL);
 	int errno;
+	unsigned long flags;
 
-	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_lock(&t150->lock);
 
 	errno = t150_settings_set40(t150, SET40_RETURN_FORCE, autocenter_force, buffer);
 
-	if(!errno)
+	if(!errno) {
+		spin_lock_irqsave(&t150->settings.access_lock, flags);
 		t150->settings.autocenter_force = autocenter_force;
+		spin_unlock_irqrestore(&t150->settings.access_lock, flags);
+	}
 
-	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_unlock(&t150->lock);
 
 	kzfree(buffer);
 	return errno;
@@ -62,15 +71,19 @@ static __always_inline int t150_set_enable_autocenter(struct t150 *t150, bool en
 {
 	uint8_t *buffer = kzalloc(4, GFP_KERNEL);
 	int errno;
+	unsigned long flags;
 
-	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_lock(&t150->lock);
 
 	errno = t150_settings_set40(t150, SET40_USE_RETURN_FORCE, enable, buffer);
 
-	if(!errno)
+	if(!errno) {
+		spin_lock_irqsave(&t150->settings.access_lock, flags);
 		t150->settings.autocenter_enabled = enable;
+		spin_unlock_irqrestore(&t150->settings.access_lock, flags);
+	}
 
-	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_unlock(&t150->lock);
 
 	kzfree(buffer);
 	return errno;
@@ -84,15 +97,19 @@ static __always_inline int t150_set_range(struct t150 *t150, uint16_t range)
 {
 	uint8_t *buffer = kzalloc(4, GFP_KERNEL);
 	int errno;
+	unsigned long flags;
 
-	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_lock(&t150->lock);
 
 	errno = t150_settings_set40(t150, SET40_RANGE, range, buffer);
 
-	if(!errno)
+	if(!errno) {
+		spin_lock_irqsave(&t150->settings.access_lock, flags);
 		t150->settings.range = range;
+		spin_unlock_irqrestore(&t150->settings.access_lock, flags);
+	}
 
-	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_unlock(&t150->lock);
 
 	kzfree(buffer);
 	return errno;
@@ -141,13 +158,15 @@ static int t150_setup_task(struct t150 *t150)
 	fw_version = kzalloc(8, GFP_KERNEL);
 
 	// Retrive current version
-	spin_lock_irqsave(&t150->settings.access_lock, t150->settings.access_lock_flags);
+	mutex_lock(&t150->lock);
+	
 	errno = usb_control_msg(
 		t150->usb_device,
 		usb_rcvctrlpipe(t150->usb_device, 0),
 		86, 0xc1, 0, 0, fw_version, 8, SETTINGS_TIMEOUT
 	);
-	spin_unlock_irqrestore(&t150->settings.access_lock, t150->settings.access_lock_flags);
+
+	mutex_unlock(&t150->lock);
 
 	if(errno < 0)
 		printk(KERN_ERR "t150: Error %d while sending the control URB to retrive firmware version\n", errno);

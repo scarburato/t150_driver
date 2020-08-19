@@ -52,6 +52,8 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 		hid_err(hid_device, "hid_hw_start() failed\n");
 		return error_code;
 	}
+	mutex_init(&t150->lock);
+	spin_lock_init(&t150->settings.access_lock);
 
 	// Path used for the input subsystem
 	usb_make_path(t150->usb_device, t150->dev_path, sizeof(t150->dev_path));
