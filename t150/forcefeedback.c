@@ -267,7 +267,6 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 {
 	struct t150 *t150 = input_get_drvdata(dev);
 	int errno = 0;
-	bool failed = false;
 
 	struct ff_first ff_first_old, ff_first_new;
 	struct ff_update ff_update_old, ff_update_new;
@@ -319,10 +318,10 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 
 		memcpy(t150->update_ffb_urbs[effect->id][0]->transfer_buffer, &ff_first_new, sizeof(struct ff_first));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][0], GFP_ATOMIC);
-		if(errno)
+		if(errno) {
 			printk(KERN_ERR "t150: submitting ffb 0 urb of effect %d, error %d\n", effect->id ,errno);
-
-		failed = failed || errno;
+			return errno;
+		}
 	}
 
 	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_update_old, &ff_update_new, sizeof(struct ff_update))){
@@ -330,10 +329,10 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 
 		memcpy(t150->update_ffb_urbs[effect->id][1]->transfer_buffer, &ff_update_new, sizeof(struct ff_update));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][1], GFP_ATOMIC);
-		if(errno)
+		if(errno) {
 			printk(KERN_ERR "t150: submitting ffb 1 urb of effect %d, error %d\n", effect->id ,errno);
-		
-		failed = failed || errno;
+			return errno;
+		}
 	}
 
 	if(T150_FF_BLIND_UPLOAD || !old || memcmp(&ff_commit_old, &ff_commit_new, sizeof(struct ff_commit))){
@@ -341,13 +340,13 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 
 		memcpy(t150->update_ffb_urbs[effect->id][2]->transfer_buffer, &ff_commit_new, sizeof(struct ff_commit));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][2], GFP_ATOMIC);
-		if(errno)
+		if(errno) {
 			printk(KERN_ERR "t150: submitting ffb 2 urb of effect %d, error %d\n", effect->id ,errno);
-		
-		failed = failed || errno;
+			return errno;
+		}
 	}
 
-	return failed ? -EIO : 0;
+	return 0;
 
 free1:	t150_ff_free_urb(t150->update_ffb_urbs[effect->id][1]);
 	t150->update_ffb_urbs[effect->id][1] = 0;
