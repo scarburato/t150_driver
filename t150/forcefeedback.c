@@ -21,8 +21,7 @@ static struct urb* t150_ff_alloc_urb(struct t150 *t150, const size_t buffer_size
 		return 0;
 
 	urb = usb_alloc_urb(0, GFP_KERNEL);
-	if(!urb)
-	{
+	if(!urb) {
 		kzfree(buffer);
 		return 0;
 	}
@@ -60,8 +59,7 @@ static inline int t150_init_ffb(struct t150 *t150)
 	// input core will automatically free force feedback structures when device is destroyed.
 	errno = input_ff_create(t150->joystick, FF_MAX_EFFECTS);
 	
-	if(errno)
-	{
+	if(errno) {
 		printk(KERN_ERR "t150: error create ff :(. errno=%i\n", errno);
 		return errno;
 	}
@@ -84,8 +82,7 @@ static inline void t150_free_ffb(struct t150 *t150)
 	unsigned int i, j;
 
 	for(i = 0; i < FF_MAX_EFFECTS; i++)
-		for(j = 0; j < 3; j++)
-		{
+		for(j = 0; j < 3; j++) {
 			if(! t150->update_ffb_urbs[i][j])
 				continue;
 
@@ -99,8 +96,7 @@ static __always_inline void t150_ff_preapre_first(struct ff_first *ff_first, str
 {
 	struct ff_envelope *ff_envelope;
 
-	switch (effect->type)
-	{
+	switch (effect->type) {
 	case FF_CONSTANT:
 		ff_envelope = &effect->u.constant.envelope;
 		ff_first->f0 = T150_FF_FIRST_CODE_CONSTANT;
@@ -125,8 +121,7 @@ static __always_inline void t150_ff_preapre_first(struct ff_first *ff_first, str
 	ff_first->f3 = 0x54;
 
 	/* Some effects do not use those fields */
-	if(ff_envelope)
-	{
+	if(ff_envelope) {
 		ff_first->attack_length = cpu_to_le16(ff_envelope->attack_length);
 		// @FIXME the attack and fade levels are wrong !
 		ff_first->attack_level  = ff_envelope->attack_level / 0x1fff;
@@ -148,8 +143,7 @@ static __always_inline void t150_ff_prepare_update(struct ff_update *ff_update, 
 	ff_update->pk_id1 = effect->id * 0x1c + 0x0e;
 	ff_update->f1 = 0x00;
 
-	switch (effect->type)
-	{
+	switch (effect->type) {
 	case FF_PERIODIC:
 	default:
 		ff_update->effect_class = T150_FF_UPDATE_CODE_PERIODIC;
@@ -201,7 +195,6 @@ static __always_inline void t150_ff_prepare_update(struct ff_update *ff_update, 
 		ff_update->effect.condition.left_sat = effect->u.condition[0].left_saturation / 0x028f;
 
 		break;
-
 	}
 }
 
@@ -222,11 +215,9 @@ static __always_inline void t150_ff_prepare_commit(struct ff_commit *ff_commit, 
 	ff_commit->delay = word_high(effect->replay.delay);
 	ff_commit->f5 = 0;
 
-	switch (effect->type)
-	{
+	switch (effect->type) {
 	case FF_PERIODIC:
-		switch (effect->u.periodic.waveform)
-		{
+		switch (effect->u.periodic.waveform) {
 		case FF_SINE:
 		default:
 			ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_SINE);
@@ -247,7 +238,6 @@ static __always_inline void t150_ff_prepare_commit(struct ff_commit *ff_commit, 
 		break;
 	case FF_DAMPER:
 		ff_commit->effect_type = cpu_to_le16(T150_FF_COMMIT_CODE_DAMPER);
-
 		break;
 	default:
 		printk(KERN_ERR "t150: unknown effect type: %i\n", effect->type);
@@ -303,7 +293,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 	t150_ff_prepare_update(&ff_update_new, effect);
 	t150_ff_prepare_commit(&ff_commit_new, effect);
 
-	if(old){
+	if(old) {
 		t150_ff_preapre_first(&ff_first_old, old);
 		t150_ff_prepare_update(&ff_update_old, old);
 		t150_ff_prepare_commit(&ff_commit_old, old);
@@ -364,8 +354,6 @@ free0:	t150_ff_free_urb(t150->update_ffb_urbs[effect->id][0]);
  */
 static int t150_ff_erase(struct input_dev *dev, int effect_id)
 {
-	printk(KERN_WARNING "t150: I should destroy %i now...\n", effect_id);
-
 	/** When an effect is destroyed also a request to stop it is sent to 
 	 * t150_ff_play. Observing the Windows's driver seems there isn't any
 	 * specific packet to explicity destory the effect, so we return success (0)
@@ -407,7 +395,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
-		printk(KERN_ERR "t150: unable to send URB, errno %i\n", errno);
+		printk(KERN_ERR "t150: unable to send URB to play effect n %d, errno %d\n", effect_id ,errno);
 
 	return errno;
 }
