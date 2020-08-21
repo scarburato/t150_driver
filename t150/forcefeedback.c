@@ -92,7 +92,7 @@ static inline void t150_free_ffb(struct t150 *t150)
 		}
 }
 
-static __always_inline void t150_ff_preapre_first(struct ff_first *ff_first, struct ff_effect *effect)
+static void t150_ff_preapre_first(struct ff_first *ff_first, struct ff_effect *effect)
 {
 	struct ff_envelope *ff_envelope;
 
@@ -136,7 +136,7 @@ static __always_inline void t150_ff_preapre_first(struct ff_first *ff_first, str
  * @param ff_update the usb packed data to prepare
  * @param effect the effect to be updated
  */
-static __always_inline void t150_ff_prepare_update(struct ff_update *ff_update, struct ff_effect *effect)
+static void t150_ff_prepare_update(struct ff_update *ff_update, struct ff_effect *effect)
 {
 	int32_t level = 0;
 
@@ -198,7 +198,7 @@ static __always_inline void t150_ff_prepare_update(struct ff_update *ff_update, 
 	}
 }
 
-static __always_inline void t150_ff_prepare_commit(struct ff_commit *ff_commit, struct ff_effect *effect)
+static void t150_ff_prepare_commit(struct ff_commit *ff_commit, struct ff_effect *effect)
 {
 	ff_commit->f0 = 0x01;
 	ff_commit->id = effect->id;
