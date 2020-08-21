@@ -31,7 +31,7 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 {
 	int i, error_code = 0;
 	struct usb_endpoint_descriptor *ep, *ep_irq_in = 0, *ep_irq_out = 0;
-	struct usb_interface interface = to_usb_interface(hid_device->dev.parent);
+	struct usb_interface *interface = to_usb_interface(hid_device->dev.parent);
 
 	t150->usb_device = interface_to_usbdev(interface);
 
@@ -42,11 +42,11 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 	error_code = hid_parse(hid_device);
 	if (error_code) 
 	{
-		hid_err(hdev, "hid_parse() failed\n");
+		hid_err(hid_device, "hid_parse() failed\n");
 		return error_code;
 	}
 
-	error_code = hid_hw_start(hdev, HID_CONNECT_HIDRAW);
+	error_code = hid_hw_start(hid_device, HID_CONNECT_HIDRAW);
 	if (error_code) 
 	{
 		hid_err(hid_device, "hid_hw_start() failed\n");
@@ -105,7 +105,7 @@ error7:	input_free_device(t150->joystick);
 error6: t150_free_ffb(t150);
 error5: t150_free_input(t150);
 error4:	;
-error3: kzfree(t150->joy_data_in);
+error3: hid_hw_stop(hid_device);
 	return error_code;
 }
 
@@ -113,8 +113,6 @@ static int t150_probe(struct hid_device *hid_device, const struct hid_device_id 
 {
 	int error_code = 0;
 	struct t150 *t150;
-
-	printk(KERN_INFO "t150: T150 Wheel (%04X:%04X) plugged\n", id->idVendor, id->idProduct);
 
 	// Create new t150 struct
 	t150 = kzalloc(sizeof(struct t150), GFP_KERNEL);
@@ -137,15 +135,7 @@ static void t150_remove(struct hid_device *hid_device)
 
 	printk(KERN_INFO "t150: T150 Wheel removed. Bye\n");
 
-	t150 = hid_get_drvdata(interface);
-
-	// Stop al pending requests
-	usb_kill_urb(t150->joy_request_in);
-	usb_kill_urb(t150->joy_request_out);
-
-	// Free al URBs
-	usb_free_urb(t150->joy_request_in);
-	usb_free_urb(t150->joy_request_out);
+	t150 = hid_get_drvdata(hid_device);
 
 	// Force feedback 
 	t150_free_ffb(t150);
@@ -156,8 +146,8 @@ static void t150_remove(struct hid_device *hid_device)
 	// sysf free
 	t150_free_attributes(t150);
 
-	// Free buffers
-	kfree(t150->joy_data_in);
+	// Stop hid
+	hid_hw_stop(hid_device);
 
 	// t150 free
 	kfree(t150);
@@ -187,7 +177,7 @@ static struct hid_driver t150_driver =
 	.id_table = t150_table,
 	.probe = t150_probe,
 	.remove = t150_remove,
-	.raw_event = 0 // TODO add my parser from input.c
+	.raw_event = t150_update_input
 };
 
 static int __init t150_init(void)

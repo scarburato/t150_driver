@@ -1,3 +1,4 @@
+struct t150_state_packet;
 struct __packed t150_input_state_packet
 {
 	/** Range from 0x0000 (full left) to 0xffff (full right)
@@ -37,7 +38,7 @@ static inline int t150_init_input(struct t150 *t150);
 static inline void t150_free_input(struct t150 *t150);
 static int t150_input_open(struct input_dev *dev);
 static void t150_input_close(struct input_dev *dev);
-static void t150_update_input(struct urb *urb);
+static int t150_update_input(struct hid_device *hdev, struct hid_report *report, struct t150_state_packet *packet, int size);
 
 static char const *const nameWH = "Thrustmaster T150 steering wheel";
 static uint16_t *packet_input_open = 0;
