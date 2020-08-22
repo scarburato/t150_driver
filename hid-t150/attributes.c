@@ -70,7 +70,7 @@ static ssize_t t150_show_return_force(struct device *dev, struct device_attribut
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d", t150->settings.autocenter_force);
+	len = sprintf(buf, "%d\n", t150->settings.autocenter_force);
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;
@@ -96,7 +96,7 @@ static ssize_t t150_show_simulate_return_force(struct device *dev, struct device
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%c", t150->settings.autocenter_enabled ? 'y' : 'n');
+	len = sprintf(buf, "%c\n", t150->settings.autocenter_enabled ? 'y' : 'n');
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;
@@ -131,7 +131,7 @@ static ssize_t t150_show_range(struct device *dev, struct device_attribute *attr
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d", (t150->settings.range * 1080) / 0xffff);
+	len = sprintf(buf, "%d\n", (t150->settings.range * 1080) / 0xffff);
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;
@@ -163,7 +163,7 @@ static ssize_t t150_show_ffb_intensity(struct device *dev, struct device_attribu
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d", (t150->settings.gain * 100) / 0x80);
+	len = sprintf(buf, "%d\n", (t150->settings.gain * 100) / 0x80);
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;
@@ -176,7 +176,7 @@ ssize_t t150_show_fw_version(struct device *dev, struct device_attribute *attr,c
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d", t150->settings.firmware_version);
+	len = sprintf(buf, "%d\n", t150->settings.firmware_version);
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;
