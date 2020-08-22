@@ -12,7 +12,7 @@
 #include <linux/spinlock.h>
 #include <linux/hid.h>
 
-#include "t150.h"
+#include "hid-t150.h"
 #include "input.h"
 #include "attributes.h"
 #include "settings.h"
@@ -168,7 +168,7 @@ MODULE_DEVICE_TABLE (hid, t150_table);
 
 static struct hid_driver t150_driver =
 {
-	.name = "t150",
+	.name = "hid-t150",
 	.id_table = t150_table,
 	.probe = t150_probe,
 	.remove = t150_remove,

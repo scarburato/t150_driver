@@ -16,7 +16,7 @@ echo "==== CONFIG DKMS ===="
 mkdir "/usr/src/t150-$VERSION"
 mkdir "/usr/src/t150-$VERSION/build"
 
-cp -R ./t150 "/usr/src/t150-$VERSION/t150"
+cp -R ./hid-t150 "/usr/src/t150-$VERSION/hid-t150"
 mkdir "/usr/src/t150-$VERSION/hid-tminit"
 git clone $INIT_DRIVER_REPO "/usr/src/t150-$VERSION/hid-tminit"
 cp ./dkms_make.mak "/usr/src/t150-$VERSION/Makefile"
@@ -28,10 +28,11 @@ dkms build -m t150 -v $VERSION
 dkms install -m t150 -v $VERSION
 
 echo "==== SET UP LOAD AT BOOT ===="
-sed -i '/t150/d' /etc/modules
+sed -i '/hid-t150/d' /etc/modules
+sed -i '/t150/d' /etc/modules # Old USB driver
 sed -i '/hid-tminit/d' /etc/modules
 
-echo "t150" >> /etc/modules
+echo "hid-t150" >> /etc/modules
 echo "hid-tminit" >> /etc/modules
 
 echo "==== INSTALLING UDEV RULES ===="
@@ -41,4 +42,4 @@ udevadm trigger
 
 echo "==== LOADING NEW MODULES ===="
 modprobe hid-tminit
-modprobe t150
+modprobe hid-t150
