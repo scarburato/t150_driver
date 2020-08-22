@@ -131,7 +131,7 @@ static void t150_remove(struct hid_device *hid_device)
 {
 	struct t150 *t150 = hid_get_drvdata(hid_device);;
 
-	hid_info(t150->hid_device, "t150: T150 Wheel removed. Bye\n");
+	hid_info(t150->hid_device, "T150RS Wheel removed. Bye\n");
 
 	// Force feedback 
 	t150_free_ffb(t150);

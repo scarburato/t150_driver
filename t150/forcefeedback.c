@@ -60,7 +60,7 @@ static inline int t150_init_ffb(struct t150 *t150)
 	errno = input_ff_create(t150->joystick, FF_MAX_EFFECTS);
 	
 	if(errno) {
-		hid_err(t150->hid_device, "t150: error create ff :(. errno=%i\n", errno);
+		hid_err(t150->hid_device, "error create ff :(. errno=%i\n", errno);
 		return errno;
 	}
 
@@ -309,7 +309,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		memcpy(t150->update_ffb_urbs[effect->id][0]->transfer_buffer, &ff_first_new, sizeof(struct ff_first));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][0], GFP_ATOMIC);
 		if(errno) {
-			hid_err(t150->hid_device, "t150: submitting ffb 0 urb of effect %d, error %d\n", effect->id ,errno);
+			hid_err(t150->hid_device, "submitting ffb 0 urb of effect %d, error %d\n", effect->id ,errno);
 			return errno;
 		}
 	}
@@ -320,7 +320,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		memcpy(t150->update_ffb_urbs[effect->id][1]->transfer_buffer, &ff_update_new, sizeof(struct ff_update));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][1], GFP_ATOMIC);
 		if(errno) {
-			hid_err(t150->hid_device, "t150: submitting ffb 1 urb of effect %d, error %d\n", effect->id ,errno);
+			hid_err(t150->hid_device, "submitting ffb 1 urb of effect %d, error %d\n", effect->id ,errno);
 			return errno;
 		}
 	}
@@ -331,7 +331,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		memcpy(t150->update_ffb_urbs[effect->id][2]->transfer_buffer, &ff_commit_new, sizeof(struct ff_commit));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][2], GFP_ATOMIC);
 		if(errno) {
-			hid_err(t150->hid_device, "t150: submitting ffb 2 urb of effect %d, error %d\n", effect->id ,errno);
+			hid_err(t150->hid_device, "submitting ffb 2 urb of effect %d, error %d\n", effect->id ,errno);
 			return errno;
 		}
 	}
@@ -395,7 +395,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
-		hid_err(t150->hid_device, "t150: unable to send URB to play effect n %d, errno %d\n", effect_id ,errno);
+		hid_err(t150->hid_device, "unable to send URB to play effect n %d, errno %d\n", effect_id ,errno);
 
 	return errno;
 }
@@ -428,5 +428,5 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
-		hid_err(t150->hid_device, "t150: unable to send URB, errno %i\n", errno);
+		hid_err(t150->hid_device, "unable to send URB to set gain, errno %i\n", errno);
 }
