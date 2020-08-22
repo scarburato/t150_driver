@@ -28,7 +28,7 @@ static int t150_set_gain(struct t150 *t150, uint8_t gain)
 		t150->settings.gain = gain;
 		spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 	} else {
-		printk(KERN_ERR "t150: Operation set gain failed with code %d", errno);
+		hid_err(t150->hid_device, "t150: Operation set gain failed with code %d", errno);
 	}
 
 	mutex_unlock(&t150->lock);
@@ -143,8 +143,7 @@ static int t150_settings_set40(
 	);
 
 	if(errno)
-		printk(
-			KERN_ERR "t150: errno %d during operation 0x40 0x%02hhX with argument (big endian) %04hhX",
+		hid_err(t150->hid_device, "t150: errno %d during operation 0x40 0x%02hhX with argument (big endian) %04hhX",
 			errno, operation, argument);
 
 	return errno;
@@ -169,27 +168,27 @@ static int t150_setup_task(struct t150 *t150)
 	mutex_unlock(&t150->lock);
 
 	if(errno < 0)
-		printk(KERN_ERR "t150: Error %d while sending the control URB to retrive firmware version\n", errno);
+		hid_err(t150->hid_device, "t150: Error %d while sending the control URB to retrive firmware version\n", errno);
 	else
 		t150->settings.firmware_version = fw_version[1];
 
 	errno = t150_set_gain(t150, 80);
 	if(errno)
-		printk(KERN_ERR "t150: Error %d while setting the t150 default gain\n", errno);
+		hid_err(t150->hid_device, "t150: Error %d while setting the t150 default gain\n", errno);
 
 	errno = t150_set_enable_autocenter(t150, false);
 	if(errno)
-		printk(KERN_ERR "t150: Error %d while setting the t150 default enable_autocenter\n", errno);
+		hid_err(t150->hid_device, "t150: Error %d while setting the t150 default enable_autocenter\n", errno);
 
 	errno = t150_set_autocenter(t150, 50);
 	if(errno)
-		printk(KERN_ERR "t150: Error %d while setting the t150 default autocenter\n", errno);
+		hid_err(t150->hid_device, "t150: Error %d while setting the t150 default autocenter\n", errno);
 
 	errno = t150_set_range(t150, 0xffff);
 	if(errno)
-		printk(KERN_ERR "t150: Error %d while setting the t150 default range\n", errno);
+		hid_err(t150->hid_device, "t150: Error %d while setting the t150 default range\n", errno);
 
-	printk(KERN_INFO "t150: setup completed! Firmware version is %d\n", t150->settings.firmware_version);
+	hid_info(t150->hid_device,  "t150: setup completed! Firmware version is %d\n", t150->settings.firmware_version);
 
 	kzfree(fw_version);
 	return errno;

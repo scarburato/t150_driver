@@ -11,8 +11,8 @@ union ff_change;
 
 struct t150
 {
-	// USB stuff
 	struct usb_device *usb_device;
+	struct hid_device *hid_device;
 
 	// Stuff to read from the wheel
 	int pipe_in;

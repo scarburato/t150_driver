@@ -89,14 +89,15 @@ static void t150_input_close(struct input_dev *dev)
  * @t150 target wheel
  * @ss   new status to register
  */
-static int t150_update_input(struct hid_device *hdev, struct hid_report *report, struct t150_state_packet *packet, int size)
+static int t150_update_input(struct hid_device *hdev, struct hid_report *report, uint8_t *packet_raw, int size)
 {
+	struct t150_state_packet *packet = (struct t150_state_packet*)packet_raw;
 	struct t150_input_state_packet *ss = &packet->data.input;
 	struct t150 *t150 = hid_get_drvdata(hdev);
 	struct d_pad_pos d_pad_current_pos;
 	int i;
 
-	printP((uint8_t*)packet, size);
+	printP(packet_raw, size);
 
 	if(packet->type != STATE_PACKET_INPUT)
 	{

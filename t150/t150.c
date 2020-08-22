@@ -34,6 +34,7 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 	struct usb_interface *interface = to_usb_interface(hid_device->dev.parent);
 
 	t150->usb_device = interface_to_usbdev(interface);
+	t150->hid_device = hid_device;
 
 	// Saving ref to t150
 	dev_set_drvdata(&t150->usb_device->dev, t150);
@@ -131,11 +132,9 @@ error0: kfree(t150);
 
 static void t150_remove(struct hid_device *hid_device)
 {
-	struct t150 *t150;
+	struct t150 *t150 = hid_get_drvdata(hid_device);;
 
-	printk(KERN_INFO "t150: T150 Wheel removed. Bye\n");
-
-	t150 = hid_get_drvdata(hid_device);
+	hid_info(t150->hid_device, "t150: T150 Wheel removed. Bye\n");
 
 	// Force feedback 
 	t150_free_ffb(t150);
