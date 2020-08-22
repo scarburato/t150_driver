@@ -59,6 +59,11 @@ static int t150_input_open(struct input_dev *dev)
 		8
 	);
 
+	if(ret)
+		return ret;
+
+	ret = hid_hw_open(t150->hid_device);
+
 	return ret;
 }
 
@@ -66,6 +71,8 @@ static void t150_input_close(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh, i;
+
+	hid_hw_close(t150->hid_device);
 
 	// Send magic codes
 	for(i = 0; i < 2; i++)
@@ -97,12 +104,11 @@ static int t150_update_input(struct hid_device *hdev, struct hid_report *report,
 	struct d_pad_pos d_pad_current_pos;
 	int i;
 
-	printP(packet_raw, size);
-
 	if(packet->type != STATE_PACKET_INPUT)
 	{
-		hid_warn(hdev, "t150: recived a packet that is not an input state :/\n");
-		return -1; // @TODO
+		hid_warn(hdev, "recived a packet that is not an input state :/\n");
+		printP(packet_raw, size);
+		return -1; // @TODO 
 	}
 
 	// Reporting axies

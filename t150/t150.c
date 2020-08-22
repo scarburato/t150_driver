@@ -41,18 +41,17 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 	hid_set_drvdata(hid_device, t150);
 
 	error_code = hid_parse(hid_device);
-	if (error_code) 
-	{
+	if (error_code) {
 		hid_err(hid_device, "hid_parse() failed\n");
 		return error_code;
 	}
 
 	error_code = hid_hw_start(hid_device, HID_CONNECT_HIDRAW);
-	if (error_code) 
-	{
+	if (error_code) {
 		hid_err(hid_device, "hid_hw_start() failed\n");
 		return error_code;
 	}
+
 	mutex_init(&t150->lock);
 	spin_lock_init(&t150->settings.access_lock);
 
@@ -61,8 +60,7 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 	strlcat(t150->dev_path, "/input0", sizeof(t150->dev_path));
 
 	// From xpad.c
-	for (i = 0; i < 2; i++)
-	{
+	for (i = 0; i < 2; i++) {
 		ep = &interface->cur_altsetting->endpoint[i].desc;
 
 		if (usb_endpoint_xfer_int(ep))
@@ -72,8 +70,7 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 				ep_irq_out = ep;
 	}
 
-	if (!ep_irq_in || !ep_irq_out) 
-	{
+	if (!ep_irq_in || !ep_irq_out) {
 		error_code = -ENODEV;
 		goto error3;
 	}
@@ -146,6 +143,7 @@ static void t150_remove(struct hid_device *hid_device)
 	t150_free_attributes(t150);
 
 	// Stop hid
+	hid_hw_close(hid_device);
 	hid_hw_stop(hid_device);
 
 	// t150 free
