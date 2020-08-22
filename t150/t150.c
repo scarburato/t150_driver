@@ -1,6 +1,5 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/usb.h>
 #include <linux/usb/ch9.h>
@@ -9,7 +8,6 @@
 #include <linux/usb/input.h>
 #include <linux/sysfs.h>
 #include <linux/device.h>
-#include <linux/delay.h>
 #include <linux/fixp-arith.h>
 #include <linux/spinlock.h>
 #include <linux/hid.h>
