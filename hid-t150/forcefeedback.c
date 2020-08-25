@@ -50,9 +50,6 @@ static inline int t150_init_ffb(struct t150 *t150)
 {
 	int errno, i;
 
-	// Setting up anchors
-	init_usb_anchor(&t150->misc_ffb_ops);
-
 	for (i = 0; i < t150_ffb_effects_length; i++)
 		set_bit(t150_ffb_effects[i], t150->joystick->ffbit);
 

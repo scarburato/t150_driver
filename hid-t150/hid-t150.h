@@ -26,7 +26,6 @@ struct t150
 	char dev_path[128];
 	struct input_dev *joystick;
 
-	struct usb_anchor misc_ffb_ops;
 	struct urb *update_ffb_urbs[FF_MAX_EFFECTS][3];
 	unsigned update_ffb_free_slot;
 
