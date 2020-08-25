@@ -39,20 +39,6 @@ static inline int t150_init_input(struct t150 *t150)
 	t150->joystick->open = t150_input_open;
 	t150->joystick->close = t150_input_close;
 
-	usb_fill_int_urb(
-		t150->joy_request_in,
-		t150->usb_device,
-		t150->pipe_in,
-		t150->joy_data_in,
-		sizeof(struct t150_state_packet),
-		t150_update_input,
-		t150,
-		t150->bInterval_in
-	);
-
-	// Start!
-	//input_register_device(t150->joystick);
-
 	return 0;
 }
 
@@ -61,7 +47,6 @@ static inline void t150_free_input(struct t150 *t150)
 	input_unregister_device(t150->joystick);
 }
 
-/** Function */
 static int t150_input_open(struct input_dev *dev)
 {
 	struct t150 *t150 = input_get_drvdata(dev);
@@ -77,9 +62,7 @@ static int t150_input_open(struct input_dev *dev)
 	if(ret)
 		return ret;
 
-	ret = usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
-	if(ret)
-		t150_input_close(dev);
+	ret = hid_hw_open(t150->hid_device);
 
 	return ret;
 }
@@ -89,7 +72,7 @@ static void t150_input_close(struct input_dev *dev)
 	struct t150 *t150 = input_get_drvdata(dev);
 	int boh, i;
 
-	usb_kill_urb(t150->joy_request_in);
+	hid_hw_close(t150->hid_device);
 
 	// Send magic codes
 	for(i = 0; i < 2; i++)
@@ -113,19 +96,19 @@ static void t150_input_close(struct input_dev *dev)
  * @t150 target wheel
  * @ss   new status to register
  */
-static void t150_update_input(struct urb *urb)
+static int t150_update_input(struct hid_device *hdev, struct hid_report *report, uint8_t *packet_raw, int size)
 {
-	struct t150_state_packet *packet = urb->transfer_buffer;
+	struct t150_state_packet *packet = (struct t150_state_packet*)packet_raw;
 	struct t150_input_state_packet *ss = &packet->data.input;
-	struct t150 *t150 = (struct t150*)urb->context;
+	struct t150 *t150 = hid_get_drvdata(hdev);
 	struct d_pad_pos d_pad_current_pos;
 	int i;
 
 	if(packet->type != STATE_PACKET_INPUT)
 	{
-		printk(KERN_WARNING "t150: recived a packet that is not an input state :/\n");
-		printP(urb->transfer_buffer, sizeof(struct t150_state_packet));
-		return;
+		hid_warn(hdev, "recived a packet that is not an input state :/\n");
+		printP(packet_raw, size);
+		return -1; // @TODO 
 	}
 
 	// Reporting axies
@@ -160,6 +143,5 @@ static void t150_update_input(struct urb *urb)
 			ss->buttons_state1 & buttons_state1_assoc[i].mask);
 
 	input_sync(t150->joystick);
-
-	usb_submit_urb(t150->joy_request_in, GFP_ATOMIC);
+	return 0;
 }

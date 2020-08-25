@@ -50,9 +50,6 @@ static inline int t150_init_ffb(struct t150 *t150)
 {
 	int errno, i;
 
-	// Setting up anchors
-	init_usb_anchor(&t150->misc_ffb_ops);
-
 	for (i = 0; i < t150_ffb_effects_length; i++)
 		set_bit(t150_ffb_effects[i], t150->joystick->ffbit);
 
@@ -60,7 +57,7 @@ static inline int t150_init_ffb(struct t150 *t150)
 	errno = input_ff_create(t150->joystick, FF_MAX_EFFECTS);
 	
 	if(errno) {
-		printk(KERN_ERR "t150: error create ff :(. errno=%i\n", errno);
+		hid_err(t150->hid_device, "error create ff :(. errno=%i\n", errno);
 		return errno;
 	}
 
@@ -92,7 +89,7 @@ static inline void t150_free_ffb(struct t150 *t150)
 		}
 }
 
-static __always_inline void t150_ff_preapre_first(struct ff_first *ff_first, struct ff_effect *effect)
+static void t150_ff_preapre_first(struct ff_first *ff_first, struct ff_effect *effect)
 {
 	struct ff_envelope *ff_envelope;
 
@@ -136,7 +133,7 @@ static __always_inline void t150_ff_preapre_first(struct ff_first *ff_first, str
  * @param ff_update the usb packed data to prepare
  * @param effect the effect to be updated
  */
-static __always_inline void t150_ff_prepare_update(struct ff_update *ff_update, struct ff_effect *effect)
+static void t150_ff_prepare_update(struct ff_update *ff_update, struct ff_effect *effect)
 {
 	int32_t level = 0;
 
@@ -198,7 +195,7 @@ static __always_inline void t150_ff_prepare_update(struct ff_update *ff_update, 
 	}
 }
 
-static __always_inline void t150_ff_prepare_commit(struct ff_commit *ff_commit, struct ff_effect *effect)
+static void t150_ff_prepare_commit(struct ff_commit *ff_commit, struct ff_effect *effect)
 {
 	ff_commit->f0 = 0x01;
 	ff_commit->id = effect->id;
@@ -309,7 +306,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		memcpy(t150->update_ffb_urbs[effect->id][0]->transfer_buffer, &ff_first_new, sizeof(struct ff_first));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][0], GFP_ATOMIC);
 		if(errno) {
-			printk(KERN_ERR "t150: submitting ffb 0 urb of effect %d, error %d\n", effect->id ,errno);
+			hid_err(t150->hid_device, "submitting ffb 0 urb of effect %d, error %d\n", effect->id ,errno);
 			return errno;
 		}
 	}
@@ -320,7 +317,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		memcpy(t150->update_ffb_urbs[effect->id][1]->transfer_buffer, &ff_update_new, sizeof(struct ff_update));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][1], GFP_ATOMIC);
 		if(errno) {
-			printk(KERN_ERR "t150: submitting ffb 1 urb of effect %d, error %d\n", effect->id ,errno);
+			hid_err(t150->hid_device, "submitting ffb 1 urb of effect %d, error %d\n", effect->id ,errno);
 			return errno;
 		}
 	}
@@ -331,7 +328,7 @@ static int t150_ff_upload(struct input_dev *dev, struct ff_effect *effect, struc
 		memcpy(t150->update_ffb_urbs[effect->id][2]->transfer_buffer, &ff_commit_new, sizeof(struct ff_commit));
 		errno = usb_submit_urb(t150->update_ffb_urbs[effect->id][2], GFP_ATOMIC);
 		if(errno) {
-			printk(KERN_ERR "t150: submitting ffb 2 urb of effect %d, error %d\n", effect->id ,errno);
+			hid_err(t150->hid_device, "submitting ffb 2 urb of effect %d, error %d\n", effect->id ,errno);
 			return errno;
 		}
 	}
@@ -395,7 +392,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
-		printk(KERN_ERR "t150: unable to send URB to play effect n %d, errno %d\n", effect_id ,errno);
+		hid_err(t150->hid_device, "unable to send URB to play effect n %d, errno %d\n", effect_id ,errno);
 
 	return errno;
 }
@@ -428,5 +425,5 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	urb->complete = t150_ff_free_urb;
 	errno = usb_submit_urb(urb, GFP_KERNEL);
 	if(errno)
-		printk(KERN_ERR "t150: unable to send URB, errno %i\n", errno);
+		hid_err(t150->hid_device, "unable to send URB to set gain, errno %i\n", errno);
 }

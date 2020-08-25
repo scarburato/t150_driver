@@ -11,18 +11,14 @@ union ff_change;
 
 struct t150
 {
-	// USB stuff
 	struct usb_device *usb_device;
+	struct hid_device *hid_device;
 
 	// Stuff to read from the wheel
-	struct joy_state_packet *joy_data_in;
-	struct urb *joy_request_in;
 	int pipe_in;
 	uint8_t bInterval_in;
 
 	// Stuff to write to the wheel
-	struct joy_state_packet *joy_data_in_dma;
-	struct urb *joy_request_out;
 	int pipe_out;
 	uint8_t bInterval_out;
 
@@ -30,7 +26,6 @@ struct t150
 	char dev_path[128];
 	struct input_dev *joystick;
 
-	struct usb_anchor misc_ffb_ops;
 	struct urb *update_ffb_urbs[FF_MAX_EFFECTS][3];
 	unsigned update_ffb_free_slot;
 

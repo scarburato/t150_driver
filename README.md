@@ -3,7 +3,6 @@
 *This is not an official driver from Thrustmaster and is provided without any kind of warranty. Loading and using this driver is at your own risk; I don't take responsibility for kernel panics, devices bricked or any other kind of inconvenience*
 
 ## Project status
-The driver is to be partially re-written as a hid driver instead of an usb driver.
 
 ### What's working 👌
 + All axis and buttons of the wheel are reported¹
@@ -61,7 +60,7 @@ This table contains a summary of each attribute
 ## How to install and load the driver
 You can try to run `install.sh` as root, the script should: copy the udev rules and other files in their appropiate positions, build and install the DKMS modules and add them to the list of modules to be loaded at boot. 
 
-To check if the modules are loaded check the output of `lsmod | grep t150` and `lsmod | grep hid-tminit`.
+To check if the modules are loaded check the output of `lsmod | grep hid-t150` and `lsmod | grep hid-tminit`.
 
 ### Manually 
 Copy the udev rules into `/etc/udev/rules.d/` and reload the udev rules (or reboot)...
