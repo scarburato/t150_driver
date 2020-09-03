@@ -172,7 +172,7 @@ static int t150_setup_task(struct t150 *t150)
 	else
 		t150->settings.firmware_version = fw_version[1];
 
-	errno = t150_set_gain(t150, 80);
+	errno = t150_set_gain(t150, 0x66); // ~80%
 	if(errno)
 		hid_err(t150->hid_device, "Error %d while setting the t150 default gain\n", errno);
 
