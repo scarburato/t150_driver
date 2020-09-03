@@ -1,7 +1,7 @@
 #!/bin/bash
 
 INIT_DRIVER_REPO="https://github.com/scarburato/hid-tminit"
-VERSION=0.7a
+VERSION=0.7b
 
 if [ ${EUID} -ne 0 ]
 then 
