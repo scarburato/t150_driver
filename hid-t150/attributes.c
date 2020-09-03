@@ -117,7 +117,7 @@ static ssize_t t150_store_range(struct device *dev, struct device_attribute *att
 	else if (range > 1080)
 		range = 1080;
 
-	range = (range * 0xffff) / 1080;
+	range = DIV_ROUND_CLOSEST((range * 0xffff), 1080);
 
 	t150_set_range(t150, range);
 
@@ -131,7 +131,7 @@ static ssize_t t150_show_range(struct device *dev, struct device_attribute *attr
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d\n", (t150->settings.range * 1080) / 0xffff);
+	len = sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(t150->settings.range * 1080, 0xffff));
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;
@@ -150,7 +150,7 @@ static ssize_t t150_store_ffb_intensity(struct device *dev, struct device_attrib
 	if(nforce > 100)
 		nforce = 100;
 
-	nforce = (nforce * 0x80)/100;
+	nforce = DIV_ROUND_CLOSEST(nforce * 0x80, 100);
 
 	t150_set_gain(t150, nforce);
 	return count;
@@ -163,7 +163,7 @@ static ssize_t t150_show_ffb_intensity(struct device *dev, struct device_attribu
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d\n", (t150->settings.gain * 100) / 0x80);
+	len = sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(t150->settings.gain * 100, 0x80));
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;

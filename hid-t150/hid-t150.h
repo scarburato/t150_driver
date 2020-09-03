@@ -74,7 +74,7 @@ static inline void printP(uint8_t const *const bytes, const size_t length)
 	for(i = 0; i < length; i++)
 		sprintf( printstr + (6 + i*3),"%02hhX ", bytes[i]);
 
-	sprintf(printstr + (9 + length*3),"\n");
+	sprintf(printstr + (6 + length*3),"\n");
 
 	printk(printstr);
 }

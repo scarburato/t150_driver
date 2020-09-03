@@ -416,7 +416,7 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 	ff_change = urb->transfer_buffer;
 	
 	ff_change->f0 = 0x43;
-	ff_change->gain = gain / 0x1ff;
+	ff_change->gain = DIV_ROUND_CLOSEST(gain, 0x1ff);
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
 	t150->settings.gain = ff_change->gain;
