@@ -1,4 +1,4 @@
-# T150 Force Feedback Wheel Linux drivers
+# Thrustmaster T150 Force Feedback Wheel Linux drivers
 **DISCLAMER**
 *This is not an official driver from Thrustmaster and is provided without any kind of warranty. Loading and using this driver is at your own risk; I don't take responsibility for kernel panics, devices bricked or any other kind of inconvenience*
 
@@ -24,6 +24,7 @@
 - Force feedback (partially)
 - Force feedback settings
 - Firmware upgrades
+- Handling of range changes from the wheel
 
 ## How to use the driver
 **Always put the switch of your wheel to the `PS3` position before plug it into your machine!**
@@ -57,8 +58,16 @@ This table contains a summary of each attribute
 |`gain`             |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |
 |`firmware_version` |decimal                       |Read only, the current firmware running on the wheel              |
 
+### Custom defaults
+To automatically set the wheel to some custom default settings when plugged you'll have to write a simple udev rule. In `/etc/udev/rules.d` create a text file called something like `99-t150-defaults.rules` and write a rule like this below
+```
+SUBSYSTEM=="usb", ATTRS{idVendor}=="044f", ATTRS{idProduct}=="b677", ATTR{range}="270"
+```
+Then run `udevadm control --reload` and `udevadm trigger` to re-load the rules. 
+The rule in the example should set the turning range to 270°.
+
 ## How to install and load the driver
-You can try to run `install.sh` as root, the script should: copy the udev rules and other files in their appropiate positions, build and install the DKMS modules and add them to the list of modules to be loaded at boot. 
+You can try to run `install.sh` as root, the script should: copy the udev rules and other files in their appropriate positions, build and install the DKMS modules and add them to the list of modules to be loaded at boot. 
 
 To check if the modules are loaded check the output of `lsmod | grep hid-t150` and `lsmod | grep hid-tminit`.
 
