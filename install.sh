@@ -10,6 +10,12 @@ then
 fi
 
 echo "==== REMOVING OLD VERSIONS ===="
+old_vers=$(dkms status | grep t150 | awk -F "\"*, \"*" '{print $2}')
+IFS=$'\n'
+for version in $old_vers
+do
+	dkms remove t150/$version --all
+done
 
 echo "==== CONFIG DKMS ===="
 #rm -rf /usr/src/t150-*
