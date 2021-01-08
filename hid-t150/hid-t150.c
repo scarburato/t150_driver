@@ -11,6 +11,7 @@
 #include <linux/fixp-arith.h>
 #include <linux/spinlock.h>
 #include <linux/hid.h>
+#include <linux/version.h>
 
 #include "hid-t150.h"
 #include "input.h"
@@ -200,17 +201,17 @@ static int __init t150_init(void)
 	else
 		return 0;
 
-err3:	kzfree(packet_input_close);
-err2:	kzfree(packet_input_what);
-err1:	kzfree(packet_input_open);
+err3:	KFREE(packet_input_close);
+err2:	KFREE(packet_input_what);
+err1:	KFREE(packet_input_open);
 err0:	return errno;
 }
 
 static void __exit t150_exit(void)
 {
-	kzfree(packet_input_open);
-	kzfree(packet_input_what);
-	kzfree(packet_input_close);
+	KFREE(packet_input_open);
+	KFREE(packet_input_what);
+	KFREE(packet_input_close);
 
 	hid_unregister_driver(&t150_driver);
 }
