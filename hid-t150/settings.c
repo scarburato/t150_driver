@@ -33,7 +33,7 @@ static int t150_set_gain(struct t150 *t150, uint8_t gain)
 
 	mutex_unlock(&t150->lock);
 
-	KFREE(buffer);
+	kfree(buffer);
 
 	return errno;
 }
@@ -59,7 +59,7 @@ static __always_inline int t150_set_autocenter(struct t150 *t150, uint8_t autoce
 
 	mutex_unlock(&t150->lock);
 
-	KFREE(buffer);
+	kfree(buffer);
 	return errno;
 }
 
@@ -85,7 +85,7 @@ static __always_inline int t150_set_enable_autocenter(struct t150 *t150, bool en
 
 	mutex_unlock(&t150->lock);
 
-	KFREE(buffer);
+	kfree(buffer);
 	return errno;
 }
 
@@ -111,7 +111,7 @@ static __always_inline int t150_set_range(struct t150 *t150, uint16_t range)
 
 	mutex_unlock(&t150->lock);
 
-	KFREE(buffer);
+	kfree(buffer);
 	return errno;
 }
 
@@ -190,6 +190,6 @@ static int t150_setup_task(struct t150 *t150)
 
 	hid_info(t150->hid_device,  "Setup completed! Firmware version is %d\n", t150->settings.firmware_version);
 
-	KFREE(fw_version);
+	kfree(fw_version);
 	return errno;
 }

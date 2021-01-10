@@ -3,12 +3,6 @@
 #define USB_THRUSTMASTER_VENDOR_ID	0x044f
 #define USB_T150_PRODUCT_ID		0xb677
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,1)
-	#define KFREE(ptr) kfree_sensitive(ptr)
-#else
-	#define KFREE(ptr) kzfree(ptr)
-#endif
-
 struct joy_state_packet;
 struct ff_first;
 struct ff_second;

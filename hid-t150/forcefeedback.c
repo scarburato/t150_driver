@@ -2,7 +2,7 @@
 static void t150_ff_free_urb(struct urb *urb) 
 {
 	//struct t150 *t150 = urb->context;
-	KFREE(urb->transfer_buffer);
+	kfree(urb->transfer_buffer);
 	usb_free_urb(urb);
 }
 
@@ -22,7 +22,7 @@ static struct urb* t150_ff_alloc_urb(struct t150 *t150, const size_t buffer_size
 
 	urb = usb_alloc_urb(0, GFP_KERNEL);
 	if(!urb) {
-		KFREE(buffer);
+		kfree(buffer);
 		return 0;
 	}
 
@@ -84,7 +84,7 @@ static inline void t150_free_ffb(struct t150 *t150)
 				continue;
 
 			usb_kill_urb(t150->update_ffb_urbs[i][j]);
-			KFREE(t150->update_ffb_urbs[i][j]->transfer_buffer);
+			kfree(t150->update_ffb_urbs[i][j]->transfer_buffer);
 			usb_free_urb(t150->update_ffb_urbs[i][j]);
 		}
 }
