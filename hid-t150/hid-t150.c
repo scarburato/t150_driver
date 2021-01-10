@@ -11,7 +11,6 @@
 #include <linux/fixp-arith.h>
 #include <linux/spinlock.h>
 #include <linux/hid.h>
-#include <linux/version.h>
 
 #include "hid-t150.h"
 #include "input.h"
