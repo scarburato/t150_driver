@@ -200,17 +200,17 @@ static int __init t150_init(void)
 	else
 		return 0;
 
-err3:	kzfree(packet_input_close);
-err2:	kzfree(packet_input_what);
-err1:	kzfree(packet_input_open);
+err3:	kfree(packet_input_close);
+err2:	kfree(packet_input_what);
+err1:	kfree(packet_input_open);
 err0:	return errno;
 }
 
 static void __exit t150_exit(void)
 {
-	kzfree(packet_input_open);
-	kzfree(packet_input_what);
-	kzfree(packet_input_close);
+	kfree(packet_input_open);
+	kfree(packet_input_what);
+	kfree(packet_input_close);
 
 	hid_unregister_driver(&t150_driver);
 }
