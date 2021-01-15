@@ -1,7 +1,7 @@
 #!/bin/bash
 
 INIT_DRIVER_REPO="https://github.com/scarburato/hid-tminit"
-VERSION=0.7b
+VERSION=0.7c
 
 if [ ${EUID} -ne 0 ]
 then 
@@ -32,14 +32,6 @@ echo "==== DKMS ===="
 dkms add -m t150 -v $VERSION
 dkms build -m t150 -v $VERSION
 dkms install -m t150 -v $VERSION
-
-echo "==== SET UP LOAD AT BOOT ===="
-sed -i '/hid-t150/d' /etc/modules
-sed -i '/t150/d' /etc/modules # Old USB driver
-sed -i '/hid-tminit/d' /etc/modules
-
-echo "hid-t150" >> /etc/modules
-echo "hid-tminit" >> /etc/modules
 
 echo "==== INSTALLING UDEV RULES ===="
 cp -vR ./files/* /

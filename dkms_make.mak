@@ -1,3 +1,5 @@
+export KDIR
+
 all:
 	mkdir -p build
 	$(MAKE) -C ./hid-t150 all
