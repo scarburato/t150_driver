@@ -23,7 +23,7 @@ static inline int t150_init_input(struct t150 *t150)
 	// Assi
 	input_set_abs_params(t150->joystick, ABS_GAS,    0x000,  0x3ff,  0, 0); // Gas
 	input_set_abs_params(t150->joystick, ABS_BRAKE,  0x000,  0x3ff,  0, 0); // Brake
-	input_set_abs_params(t150->joystick, ABS_Z,      0x000,  0x3ff,  0, 0); // Clutch ??
+	input_set_abs_params(t150->joystick, ABS_RZ,      0x000,  0x3ff,  0, 0); // Clutch
 	input_set_abs_params(t150->joystick, ABS_WHEEL, -0x8000, 0x7fff, 0, 0); // Wheel
 
 	input_set_abs_params(t150->joystick, ABS_HAT0X, -1, +1, 0, 0); // d-pad
@@ -118,7 +118,7 @@ static int t150_update_input(struct hid_device *hdev, struct hid_report *report,
 	input_report_abs(t150->joystick, ABS_BRAKE,
 		0x3ff - le16_to_cpu(ss->brake_axis));
 
-	input_report_abs(t150->joystick, ABS_Z,
+	input_report_abs(t150->joystick, ABS_RZ,
 		0x3ff - le16_to_cpu(ss->clutch_axis));
 
 	input_report_abs(t150->joystick, ABS_WHEEL,
