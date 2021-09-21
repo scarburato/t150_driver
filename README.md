@@ -17,7 +17,7 @@
   * Damper effects:    `FF_DAMPER`
 + Firmware version is reported
 
-¹: Except for the shifter buttons, because I don't have the PRO version. However, I've guessed the clutch axis.
+¹: Except for the shifter buttons, because I don't have the PRO version. However if the hid report is correct they should work just fine
 
 ### What is missing 🚧
 - Reading the settings from the wheel
