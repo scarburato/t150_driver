@@ -7,8 +7,4 @@ struct __packed t150_state_packet
 {
 	/** 0x07 if this packet contains the wheel current input status */
 	uint8_t		type;
-
-	union{
-		struct t150_input_state_packet input;
-	} data;
 };

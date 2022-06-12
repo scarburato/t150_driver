@@ -44,7 +44,7 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 		return error_code;
 	}
 
-	error_code = hid_hw_start(hid_device, HID_CONNECT_HIDRAW);
+	error_code = hid_hw_start(hid_device, HID_CONNECT_DEFAULT & ~HID_CONNECT_FF);
 	if (error_code) {
 		hid_err(hid_device, "hid_hw_start() failed\n");
 		return error_code;
@@ -86,18 +86,13 @@ static inline int t150_constructor(struct t150 *t150,struct hid_device *hid_devi
 	error_code = t150_init_ffb(t150);
 	if(error_code)
 		goto error5;
-
-	error_code = input_register_device(t150->joystick);
-	if(error_code)
-		goto error6;
 	
 	error_code = t150_init_attributes(t150);
 	if(error_code)
-		goto error7;
+		goto error6;
 
 	return 0;
 
-error7:	input_free_device(t150->joystick);
 error6: t150_free_ffb(t150);
 error5: t150_free_input(t150);
 error4:	;
