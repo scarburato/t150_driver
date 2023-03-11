@@ -1,6 +1,5 @@
 #!/bin/bash
 
-INIT_DRIVER_REPO="https://github.com/scarburato/hid-tminit"
 VERSION=0.8a
 
 if [ ${EUID} -ne 0 ]
@@ -23,8 +22,6 @@ mkdir "/usr/src/t150-$VERSION"
 mkdir "/usr/src/t150-$VERSION/build"
 
 cp -R ./hid-t150 "/usr/src/t150-$VERSION/hid-t150"
-mkdir "/usr/src/t150-$VERSION/hid-tminit"
-git clone $INIT_DRIVER_REPO "/usr/src/t150-$VERSION/hid-tminit"
 cp ./dkms_make.mak "/usr/src/t150-$VERSION/Makefile"
 cp ./dkms.conf "/usr/src/t150-$VERSION/"
 
@@ -39,5 +36,4 @@ udevadm control --reload
 udevadm trigger
 
 echo "==== LOADING NEW MODULES ===="
-modprobe hid-tminit
 modprobe hid-t150
