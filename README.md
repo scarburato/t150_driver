@@ -30,17 +30,7 @@
 **Always put the switch of your wheel to the `PS3` position before plug it into your machine!**
 
 ### Switch the wheel from FFB to full T150
-When attached to your machine the wheel reports itself as `Thrustmaster FFB Wheel`, in this mode not all functionalities
-are available. In order to switch to the `Thrustmaster T150RS` we have to send the following USB control packet to the 
-wheel:
-
-| bRequestType | bRequest | wValue | wIndex | wLength |
-|--------------|----------|--------|--------|---------|
-| `0x41`       | `83`     |`0x0006`| `0`    | `0`     |
-
-To do so we can use the [`hid-tminit`](https://github.com/scarburato/hid-tminit) driver (See the install section, if you use the install script it should do it automatically) xor you can write a simple userspace applications like  [this one](https://gitlab.com/her0/tmdrv) thanks to `libusb`.
-
-When the wheel receives the control packet it will reset and re-appear in the system as a T150.
+Since kernel version 5.13, hid_thrustmaster automatically switch thrustmaster devices into full mode.
 
 ### Setting up the wheel parameters
 You can edit the settings of each wheel attached to the machine by writing the sysfs attributes usually found in the 
