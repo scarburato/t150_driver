@@ -7,4 +7,4 @@ all:
 	
 clean:
 	$(MAKE) -C ./hid-t150 clean
-	rm -r ./build/*
+	rm -rf ./build/*
