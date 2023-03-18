@@ -6,42 +6,42 @@ static inline int t150_init_attributes(struct t150 *t150)
 	// @FIXME I do not know if it is desiradable to wait for URBs in probe() method...
 	t150_setup_task(t150);
 
-	errno = device_create_file(&t150->usb_device->dev, &dev_attr_autocenter);
+	errno = device_create_file(&t150->hid_device->dev, &dev_attr_autocenter);
 	if(errno)
 		return errno;
 
-	errno = device_create_file(&t150->usb_device->dev, &dev_attr_enable_autocenter);
+	errno = device_create_file(&t150->hid_device->dev, &dev_attr_enable_autocenter);
 	if(errno)
 		goto err1;
 
-	errno = device_create_file(&t150->usb_device->dev, &dev_attr_range);
+	errno = device_create_file(&t150->hid_device->dev, &dev_attr_range);
 	if(errno)
 		goto err2;
 
-	errno = device_create_file(&t150->usb_device->dev, &dev_attr_gain);
+	errno = device_create_file(&t150->hid_device->dev, &dev_attr_gain);
 	if(errno)
 		goto err3;
 
-	errno = device_create_file(&t150->usb_device->dev, &dev_attr_firmware_version);
+	errno = device_create_file(&t150->hid_device->dev, &dev_attr_firmware_version);
 	if(errno)
 		goto err4;
 
 	return 0;
 
-err4:	device_remove_file(&t150->usb_device->dev, &dev_attr_firmware_version);
-err3:	device_remove_file(&t150->usb_device->dev, &dev_attr_range);
-err2:	device_remove_file(&t150->usb_device->dev, &dev_attr_enable_autocenter);
-err1:	device_remove_file(&t150->usb_device->dev, &dev_attr_autocenter);
+err4:	device_remove_file(&t150->hid_device->dev, &dev_attr_firmware_version);
+err3:	device_remove_file(&t150->hid_device->dev, &dev_attr_range);
+err2:	device_remove_file(&t150->hid_device->dev, &dev_attr_enable_autocenter);
+err1:	device_remove_file(&t150->hid_device->dev, &dev_attr_autocenter);
 	return errno;
 }
 
 static inline void t150_free_attributes(struct t150 *t150)
 {
-	device_remove_file(&t150->usb_device->dev, &dev_attr_autocenter);
-	device_remove_file(&t150->usb_device->dev, &dev_attr_enable_autocenter);
-	device_remove_file(&t150->usb_device->dev, &dev_attr_range);
-	device_remove_file(&t150->usb_device->dev, &dev_attr_gain);
-	device_remove_file(&t150->usb_device->dev, &dev_attr_firmware_version);
+	device_remove_file(&t150->hid_device->dev, &dev_attr_autocenter);
+	device_remove_file(&t150->hid_device->dev, &dev_attr_enable_autocenter);
+	device_remove_file(&t150->hid_device->dev, &dev_attr_range);
+	device_remove_file(&t150->hid_device->dev, &dev_attr_gain);
+	device_remove_file(&t150->hid_device->dev, &dev_attr_firmware_version);
 }
 
 /**/
