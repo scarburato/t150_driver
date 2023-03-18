@@ -15,6 +15,7 @@ for version in $old_vers
 do
 	dkms remove -m t150 -v $version --all
 done
+rmmod hid_t150
 
 echo "==== CONFIG DKMS ===="
 #rm -rf /usr/src/t150-*
