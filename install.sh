@@ -22,7 +22,7 @@ echo "==== CONFIG DKMS ===="
 mkdir "/usr/src/t150-$VERSION"
 mkdir "/usr/src/t150-$VERSION/build"
 
-cp -R ./hid-t150 "/usr/src/t150-$VERSION/hid-t150"
+cp -TR ./hid-t150 "/usr/src/t150-$VERSION/hid-t150"
 cp ./dkms_make.mak "/usr/src/t150-$VERSION/Makefile"
 cp ./dkms.conf "/usr/src/t150-$VERSION/"
 
