@@ -9,11 +9,11 @@ then
 fi
 
 echo "==== REMOVING OLD VERSIONS ===="
-old_vers=$(dkms status | grep t150 | awk -F "\"*, \"*" '{print $2}')
+old_vers=$(dkms status | grep t150 | awk -F "\"*, \"*" '{print $1}' | awk -F '/' '{print $2}')
 IFS=$'\n'
 for version in $old_vers
 do
-	dkms remove t150/$version --all
+	dkms remove -m t150 -v $version --all
 done
 
 echo "==== CONFIG DKMS ===="
