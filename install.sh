@@ -27,9 +27,9 @@ cp ./dkms_make.mak "/usr/src/t150-$VERSION/Makefile"
 cp ./dkms.conf "/usr/src/t150-$VERSION/"
 
 echo "==== DKMS ===="
-dkms add -m t150 -v $VERSION
-dkms build -m t150 -v $VERSION
-dkms install -m t150 -v $VERSION
+dkms add -m t150 -v $VERSION --verbose
+dkms build -m t150 -v $VERSION --verbose
+dkms install -m t150 -v $VERSION --verbose
 
 echo "==== INSTALLING UDEV RULES ===="
 cp -vR ./files/* /
