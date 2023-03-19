@@ -57,7 +57,7 @@ The rule in the example should set the turning range to 270°.
 ## How to install and load the driver
 You can try to run `install.sh` as root, the script should: copy the udev rules and other files in their appropriate positions, build and install the DKMS modules and add them to the list of modules to be loaded at boot. 
 
-To check if the modules are loaded check the output of `lsmod | grep hid-t150` and `lsmod | grep hid-tminit`.
+To check if the modules are loaded check the output of `lsmod | grep hid-t150`.
 
 ### Manually 
 Copy the udev rules into `/etc/udev/rules.d/` and reload the udev rules (or reboot)...
@@ -67,4 +67,4 @@ For a simple build: install all the required tools to compile (like `build-essen
 ```
 make
 ```
-into the t150 and hid-tminit folders. Now you can load the .ko files with `insmod` and unload them with `rmmod`
+into the t150 folder. Now you can load the .ko file with `insmod` and unload with `rmmod`
