@@ -5,7 +5,7 @@
 ## Project status
 
 ### What's working 👌
-+ All axis and buttons of the wheel are reported¹
++ All axis and buttons of the wheel are reported
 + You can set the range of the wheel from 270° to 1080°
 + You can set the return force of the wheel from 0% to 100%
 + Force feedback (partially)
@@ -16,8 +16,6 @@
   * Condition effects: `FF_SPRING`
   * Damper effects:    `FF_DAMPER`
 + Firmware version is reported
-
-¹: Except for the shifter buttons, because I don't have the PRO version. However if the hid report is correct they should work just fine
 
 ### What is missing 🚧
 - Reading the settings from the wheel
