@@ -49,7 +49,7 @@ This table contains a summary of each attribute
 ### Custom defaults
 To automatically set the wheel to some custom default settings when plugged you'll have to write a simple udev rule. In `/etc/udev/rules.d` create a text file called something like `99-t150-defaults.rules` and write a rule like this below
 ```
-SUBSYSTEM=="usb", ATTRS{idVendor}=="044f", ATTRS{idProduct}=="b677", ATTR{range}="270"
+SUBSYSTEM=="hid", ATTR{range}="270", ATTR{gain}="75"
 ```
 Then run `udevadm control --reload` and `udevadm trigger` to re-load the rules. 
 The rule in the example should set the turning range to 270°.
