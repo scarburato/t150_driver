@@ -47,9 +47,9 @@ This table contains a summary of each attribute
 |`firmware_version` |decimal                       |Read only, the current firmware running on the wheel              |
 
 ### Custom defaults
-To automatically set the wheel to some custom default settings when plugged you'll have to write a simple udev rule. In `/etc/udev/rules.d` create a text file called something like `99-t150-defaults.rules` and write a rule like this below
+To automatically set the wheel to some custom default settings when plugged you'll have to write a simple udev rule. In `/etc/udev/rules.d` create a text file called something like `99-t150-defaults.rules` and write a rule like this below. Refer to the output of `udevadm info --attribute-walk /sys/devices/${WHEEL_DEVICE_PATH}` in case rules from example below do not match.
 ```
-SUBSYSTEM=="hid", ATTR{range}="270", ATTR{gain}="75"
+SUBSYSTEM=="hid", ATTRS{driver}=="hid-t150", ATTR{range}="270", ATTR{gain}="75"
 ```
 Then run `udevadm control --reload` and `udevadm trigger` to re-load the rules. 
 The rule in the example should set the turning range to 270°.
