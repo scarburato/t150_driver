@@ -1,4 +1,4 @@
-# Thrustmaster T150 Force Feedback Wheel Linux drivers
+# Thrustmaster T150 and TMX Force Feedback Wheel Linux drivers
 **DISCLAMER**
 *This is not an official driver from Thrustmaster and is provided without any kind of warranty. Loading and using this driver is at your own risk; I don't take responsibility for kernel panics, devices bricked or any other kind of inconvenience*
 
@@ -6,7 +6,8 @@
 
 ### What's working 👌
 + All axis and buttons of the wheel are reported
-+ You can set the range of the wheel from 270° to 1080°
++ You can set the range of the T150 wheel from 270° to 1080°
++ You can set the range of the TMX wheel from 270° to 900°
 + You can set the return force of the wheel from 0% to 100%
 + Force feedback (partially)
   * You can set the global force feedback scale from 0% to 100%
@@ -24,11 +25,13 @@
 - Firmware upgrades
 - Handling of range changes from the wheel
 
-## How to use the driver
-**Always put the switch of your wheel to the `PS3` position before plug it into your machine!**
-
 ### Switch the wheel from FFB to full T150
-Since kernel version 5.13, hid_thrustmaster automatically switch thrustmaster devices into full mode.
+Since kernel version 5.13, hid_thrustmaster automatically switch some thrustmaster devices into full mode. The T150 is covered by this driver. The TMX wheel does not have support in the hid_thrustmaster and requries either using [TMX-Driver](https://github.com/emtek995/TMX-driver) (kernel driver) or [tmdrv](https://github.com/her001/tmdrv) (python userspace driver) to intialize.
+
+## How to use the driver
+**For T150, always put the switch of your wheel to the `PS3` position before plug it into your machine!**
+For the TMX, plug the wheel into your machine and load your preffered intialization driver. The mode switch will only be used to swap the clutch and accelerator pedals if using the T3PA-Pro in hangdown mode.
+
 
 ### Setting up the wheel parameters
 You can edit the settings of each wheel attached to the machine by writing the sysfs attributes usually found in the 
@@ -40,7 +43,7 @@ This table contains a summary of each attribute
 
 |Attribute          |Value                         |Description                                                       |
 |-------------------|------------------------------|------------------------------------------------------------------|
-|`range`            |decimal from `270` to `1080`  |How far the wheel turns                                           |
+|`range`            |decimal from `270` to `1080`  |How far the wheel turns (TMX limited to 900)                      |
 |`autocenter`       |decimal from `0` to `100`     |The force used to re-center the wheel                             |
 |`enable_autocenter`|boolean `y` xor `n`           |Use the user defined return force or let the game handle it trough ffb|
 |`gain`             |decimal from `0` to `100`     |Force feedback intensity. 0 no effects are reproduced             |

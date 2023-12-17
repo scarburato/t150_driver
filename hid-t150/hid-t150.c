@@ -157,6 +157,7 @@ static void t150_remove(struct hid_device *hid_device)
 static struct hid_device_id t150_table[] =
 {
 	{ HID_USB_DEVICE(USB_THRUSTMASTER_VENDOR_ID, USB_T150_PRODUCT_ID) },
+	{ HID_USB_DEVICE(USB_THRUSTMASTER_VENDOR_ID, USB_TMX_PRODUCT_ID) },
 	{} /* Terminating entry */
 };
 MODULE_DEVICE_TABLE (hid, t150_table);

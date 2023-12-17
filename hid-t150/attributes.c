@@ -94,7 +94,6 @@ static ssize_t t150_show_simulate_return_force(struct device *dev, struct device
 	int len;
 	struct t150 *t150 = dev_get_drvdata(dev);
 	unsigned long flags;
-
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
 	len = sprintf(buf, "%c\n", t150->settings.autocenter_enabled ? 'y' : 'n');
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
@@ -106,18 +105,25 @@ static ssize_t t150_store_range(struct device *dev, struct device_attribute *att
 	const char *buf, size_t count)
 {
 	uint16_t range;
+	int dev_max_range;
+
 	struct t150 *t150 = dev_get_drvdata(dev);
 
 	// If mallformed input leave...
 	if(kstrtou16(buf, 10, &range))
 		return count;
 
+	if(t150->hid_device->product == USB_T150_PRODUCT_ID)
+		dev_max_range = 1080;
+	else if (t150->hid_device->product == USB_TMX_PRODUCT_ID)
+		dev_max_range = 900;
+
 	if(range < 270)
 		range = 270;
-	else if (range > 1080)
-		range = 1080;
+	else if (range > dev_max_range)
+		range = dev_max_range;
 
-	range = DIV_ROUND_CLOSEST((range * 0xffff), 1080);
+	range = DIV_ROUND_CLOSEST((range * 0xffff), dev_max_range);
 
 	t150_set_range(t150, range);
 
@@ -130,8 +136,15 @@ static ssize_t t150_show_range(struct device *dev, struct device_attribute *attr
 	struct t150 *t150 = dev_get_drvdata(dev);
 	unsigned long flags;
 
+	int dev_max_range;
+
+	if(t150->hid_device->product == 0xb677)
+		dev_max_range = 1080;
+	else if (t150->hid_device->product == 0xb67f)
+		dev_max_range = 900;
+
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(t150->settings.range * 1080, 0xffff));
+	len = sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(t150->settings.range * dev_max_range, 0xffff));
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;

@@ -2,6 +2,7 @@
 
 #define USB_THRUSTMASTER_VENDOR_ID	0x044f
 #define USB_T150_PRODUCT_ID		0xb677
+#define USB_TMX_PRODUCT_ID		0xb67f
 
 struct joy_state_packet;
 struct ff_first;
