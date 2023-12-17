@@ -113,9 +113,9 @@ static ssize_t t150_store_range(struct device *dev, struct device_attribute *att
 	if(kstrtou16(buf, 10, &range))
 		return count;
 
-	if(t150->hid_device->product == 0xb677)
+	if(t150->hid_device->product == USB_T150_PRODUCT_ID)
 		dev_max_range = 1080;
-	else if (t150->hid_device->product == 0xb67f)
+	else if (t150->hid_device->product == USB_TMX_PRODUCT_ID)
 		dev_max_range = 900;
 
 	if(range < 270)
