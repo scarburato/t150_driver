@@ -138,9 +138,9 @@ static ssize_t t150_show_range(struct device *dev, struct device_attribute *attr
 
 	int dev_max_range;
 
-	if(t150->hid_device->product == 0xb677)
+	if(t150->hid_device->product == USB_T150_PRODUCT_ID)
 		dev_max_range = 1080;
-	else if (t150->hid_device->product == 0xb67f)
+	else if (t150->hid_device->product == USB_TMX_PRODUCT_ID)
 		dev_max_range = 900;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
