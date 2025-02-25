@@ -48,15 +48,12 @@ static inline void t150_free_attributes(struct t150 *t150)
 static ssize_t t150_store_return_force(struct device *dev, struct device_attribute *attr,
 	const char *buf, size_t count)
 {
-	uint8_t nforce;
+	uint16_t nforce;
 	struct t150 *t150 = dev_get_drvdata(dev);
 
 	// If mallformed input leave...
-	if(kstrtou8(buf, 10, &nforce))
+	if(kstrtou16(buf, 10, &nforce))
 		return count;
-
-	if(nforce > 100)
-		nforce = 100;
 
 	t150_set_autocenter(t150, nforce);
 
