@@ -399,7 +399,7 @@ static int t150_ff_play(struct input_dev *dev, int effect_id, int times)
 
 /**
  * @param dev
- * @param gain 0xFFFF = 100% of gain 
+ * @param gain 0xFFFF = 100% of gain
  */
 static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 {
@@ -414,9 +414,9 @@ static void t150_ff_set_gain(struct input_dev *dev, uint16_t gain)
 		return; // -NOMEM
 
 	ff_change = urb->transfer_buffer;
-	
+
 	ff_change->f0 = 0x43;
-	ff_change->gain = DIV_ROUND_CLOSEST(gain, 0x1ff);
+	ff_change->gain = gain;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
 	t150->settings.gain = ff_change->gain;

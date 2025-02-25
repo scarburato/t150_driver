@@ -1,9 +1,9 @@
 /**
  * @param t150 ptr to t150
- * @param gain a value between 0x00 and 0x80 where 0x80 is 100% gain
+ * @param gain a value between 0x00 and 0xffff where 0xffff is 100% gain
  * @return 0 on success @see usb_interrupt_msg for return codes
  */
-static int t150_set_gain(struct t150 *t150, uint8_t gain)
+static int t150_set_gain(struct t150 *t150, uint16_t gain)
 {
 	int boh, errno;
 	uint8_t *buffer = kzalloc(2, GFP_KERNEL);
@@ -39,9 +39,9 @@ static int t150_set_gain(struct t150 *t150, uint8_t gain)
 }
 
 /**
- * @param autocenter_force a value between 0 and 100, is the strength of the autocenter effect
+ * @param autocenter_force a value between 0 and 65535, is the strength of the autocenter effect
  */
-static __always_inline int t150_set_autocenter(struct t150 *t150, uint8_t autocenter_force)
+static __always_inline int t150_set_autocenter(struct t150 *t150, uint16_t autocenter_force)
 {
 	uint8_t *buffer = kzalloc(4, GFP_KERNEL);
 	int errno;
@@ -49,7 +49,7 @@ static __always_inline int t150_set_autocenter(struct t150 *t150, uint8_t autoce
 
 	mutex_lock(&t150->lock);
 
-	errno = t150_settings_set40(t150, SET40_RETURN_FORCE, autocenter_force, buffer);
+	errno = t150_settings_set40(t150, SET40_RETURN_FORCE, DIV_ROUND_CLOSEST((autocenter_force * 100), 0xffff), buffer);
 
 	if(!errno) {
 		spin_lock_irqsave(&t150->settings.access_lock, flags);
@@ -172,7 +172,7 @@ static int t150_setup_task(struct t150 *t150)
 	else
 		t150->settings.firmware_version = fw_version[1];
 
-	errno = t150_set_gain(t150, 0x66); // ~80%
+	errno = t150_set_gain(t150, 0xbffe); // ~75%
 	if(errno)
 		hid_err(t150->hid_device, "Error %d while setting the t150 default gain\n", errno);
 
@@ -180,7 +180,7 @@ static int t150_setup_task(struct t150 *t150)
 	if(errno)
 		hid_err(t150->hid_device, "Error %d while setting the t150 default enable_autocenter\n", errno);
 
-	errno = t150_set_autocenter(t150, 50);
+	errno = t150_set_autocenter(t150, 0x7fff);
 	if(errno)
 		hid_err(t150->hid_device, "Error %d while setting the t150 default autocenter\n", errno);
 

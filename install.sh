@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.8a
+VERSION=1.0
 
 if [ ${EUID} -ne 0 ]
 then 

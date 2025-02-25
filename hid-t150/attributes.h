@@ -27,7 +27,7 @@ static ssize_t t150_show_fw_version(struct device *dev, struct device_attribute 
 
 /** Attribute used to set how much strong is the simulated "spring" that makes
  * the wheel center back when steered.
- * Input is a decimal value between 0 and 100*/
+ * Input is a decimal value between 0 and 65535*/
 static DEVICE_ATTR(autocenter, 0664, t150_show_return_force, t150_store_return_force);
 
 /** Attribute used to set if the wheel has to activate the auto-centering of the
@@ -41,7 +41,7 @@ static DEVICE_ATTR(range, 0664, t150_show_range, t150_store_range);
 
 /** 
  * How strong the ffb effects are reproduced on the wheel
- * Input is a decimal value between between 0 and 100*/
+ * Input is a decimal value between between 0 and 65535*/
 static DEVICE_ATTR(gain, 0664, t150_show_ffb_intensity, t150_store_ffb_intensity);
 
 /**
