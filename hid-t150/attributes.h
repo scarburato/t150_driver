@@ -41,7 +41,7 @@ static DEVICE_ATTR(range, 0664, t150_show_range, t150_store_range);
 
 /** 
  * How strong the ffb effects are reproduced on the wheel
- * Input is a decimal value between between 0 and 100*/
+ * Input is a decimal value between between 0 and 65535*/
 static DEVICE_ATTR(gain, 0664, t150_show_ffb_intensity, t150_store_ffb_intensity);
 
 /**

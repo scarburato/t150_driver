@@ -140,7 +140,7 @@ struct __packed ff_change_effect_status
 struct __packed ff_change_gain
 {
 	uint8_t f0;
-	uint8_t gain;
+	uint16_t gain;
 };
 
 union __packed ff_change

@@ -28,7 +28,7 @@ struct opertation42
 static int t150_settings_set40(struct t150 *t150, operation_t operation, 
 	uint16_t argument, void *buffer);
 
-static int t150_set_gain(struct t150 *t150, uint8_t gain);
+static int t150_set_gain(struct t150 *t150, uint16_t gain);
 static __always_inline int t150_set_autocenter(struct t150 *t150, uint8_t autocenter_force);
 static __always_inline int t150_set_enable_autocenter(struct t150 *t150, bool enable);
 static __always_inline int t150_set_range(struct t150 *t150, uint16_t range);

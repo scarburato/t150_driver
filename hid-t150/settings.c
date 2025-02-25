@@ -1,9 +1,9 @@
 /**
  * @param t150 ptr to t150
- * @param gain a value between 0x00 and 0x80 where 0x80 is 100% gain
+ * @param gain a value between 0x00 and 0xffff where 0xffff is 100% gain
  * @return 0 on success @see usb_interrupt_msg for return codes
  */
-static int t150_set_gain(struct t150 *t150, uint8_t gain)
+static int t150_set_gain(struct t150 *t150, uint16_t gain)
 {
 	int boh, errno;
 	uint8_t *buffer = kzalloc(2, GFP_KERNEL);
@@ -172,7 +172,7 @@ static int t150_setup_task(struct t150 *t150)
 	else
 		t150->settings.firmware_version = fw_version[1];
 
-	errno = t150_set_gain(t150, 0x66); // ~80%
+	errno = t150_set_gain(t150, 0xbffe); // ~75%
 	if(errno)
 		hid_err(t150->hid_device, "Error %d while setting the t150 default gain\n", errno);
 

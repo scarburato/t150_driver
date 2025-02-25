@@ -38,7 +38,7 @@ struct t150
 		uint8_t autocenter_force;
 		bool autocenter_enabled;
 		uint16_t range;
-		uint8_t gain;
+		uint16_t gain;
 
 		uint8_t firmware_version;
 	} settings;
