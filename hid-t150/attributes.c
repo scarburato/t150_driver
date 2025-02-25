@@ -153,17 +153,12 @@ static ssize_t t150_show_range(struct device *dev, struct device_attribute *attr
 static ssize_t t150_store_ffb_intensity(struct device *dev, struct device_attribute *attr,
 	const char *buf, size_t count)
 {
-	uint8_t nforce;
+	uint16_t nforce;
 	struct t150 *t150 = dev_get_drvdata(dev);
 
 	// If mallformed input leave...
-	if(kstrtou8(buf, 10, &nforce))
+	if(kstrtou16(buf, 10, &nforce))
 		return count;
-
-	if(nforce > 100)
-		nforce = 100;
-
-	nforce = DIV_ROUND_CLOSEST(nforce * 0x80, 100);
 
 	t150_set_gain(t150, nforce);
 	return count;
@@ -176,7 +171,7 @@ static ssize_t t150_show_ffb_intensity(struct device *dev, struct device_attribu
 	unsigned long flags;
 
 	spin_lock_irqsave(&t150->settings.access_lock, flags);
-	len = sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(t150->settings.gain * 100, 0x80));
+	len = sprintf(buf, "%d\n", t150->settings.gain);
 	spin_unlock_irqrestore(&t150->settings.access_lock, flags);
 
 	return len;
